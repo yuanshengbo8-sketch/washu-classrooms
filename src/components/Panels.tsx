@@ -4,6 +4,7 @@ import { NO_FILTERS, filtersActive, floorLabel, matchesFilters, roomSize } from 
 import type { Lang, StringKey } from '../lib/i18n'
 import { term } from '../lib/i18n'
 import { directionsUrl, shareUrl, streetViewUrl } from '../lib/store'
+import { CAMPUS } from '../campus'
 import { Icon } from './Icon'
 import { schoolName, schoolOf, schoolStyle } from '../lib/schools'
 import type { Availability, FloorPlans, StudyRoom } from '../lib/study'
@@ -14,7 +15,6 @@ type T = (key: StringKey, vars?: Record<string, string | number>) => string
 
 const CAPACITY_STEPS = [0, 20, 40, 80, 150]
 /** Equipment worth filtering on; the rest is near-universal or rare. */
-const FILTER_EQUIPMENT = ['Document Camera', 'Wireless Bodypack Microphone', 'Data Projector: Dual', 'Two Cameras', 'Interactive Board', 'Laptop USB-C']
 
 function compareRooms (a: Room, b: Room): number {
   return a.buildingName.localeCompare(b.buildingName) || a.floor - b.floor || a.room.localeCompare(b.room, 'en', { numeric: true })
@@ -96,7 +96,7 @@ export function FinderPanel ({ rooms, lang, t, filters, favorites, favoritesOnly
     return [...counts].sort((a, b) => b[1] - a[1])
   }, [rooms])
   const equipment = useMemo(
-    () => FILTER_EQUIPMENT.filter(item => rooms.some(room => room.equipment.includes(item))),
+    () => CAMPUS.finderEquipment.filter(item => rooms.some(room => room.equipment.includes(item))),
     [rooms]
   )
   const results = useMemo(() => {
@@ -150,12 +150,17 @@ export function FinderPanel ({ rooms, lang, t, filters, favorites, favoritesOnly
           <div className='filters__group'>
             <span className='filters__label'>{t('features')}</span>
             <div className='chips'>
-              <button type='button' className={filters.accessible ? 'chip chip--on' : 'chip'} onClick={() => onFilters({ ...filters, accessible: !filters.accessible })}>
-                <Icon name='wheelchair' size={14} />{t('accessible')}
-              </button>
-              <button type='button' className={filters.tour ? 'chip chip--on' : 'chip'} onClick={() => onFilters({ ...filters, tour: !filters.tour })}>
-                {t('hasTour')}
-              </button>
+              {/* A chip only makes sense when the directory records the feature at all. */}
+              {rooms.some(room => room.accessible) ? (
+                <button type='button' className={filters.accessible ? 'chip chip--on' : 'chip'} onClick={() => onFilters({ ...filters, accessible: !filters.accessible })}>
+                  <Icon name='wheelchair' size={14} />{t('accessible')}
+                </button>
+              ) : null}
+              {rooms.some(room => room.tour) ? (
+                <button type='button' className={filters.tour ? 'chip chip--on' : 'chip'} onClick={() => onFilters({ ...filters, tour: !filters.tour })}>
+                  {t('hasTour')}
+                </button>
+              ) : null}
               {equipment.map(item => (
                 <button key={item} type='button' className={filters.equipment.includes(item) ? 'chip chip--on' : 'chip'} onClick={() => toggleEquipment(item)}>
                   {term(lang, item)}

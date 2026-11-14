@@ -17,7 +17,8 @@ const FEATURES: Record<string, StringKey> = {
   computer: 'studyComputer',
   'a-v-equipment': 'studyAv',
   'accessible-seating': 'accessible',
-  'washu-key-access-only': 'studyCard'
+  'washu-key-access-only': 'studyCard',
+  'presentation-screen': 'studyScreen'
 }
 
 function statusText (status: StudyStatus, t: T): string {

@@ -33,8 +33,9 @@ function within (point, polygon) {
  * @param {object} [options.managedBy]    building name -> school that schedules its rooms
  * @param {object} [options.photos]       building id -> exterior photo
  * @param {boolean} [options.withinCampus] only buildings inside a mapped university boundary are campus buildings
+ * @param {boolean} [options.plantCampus]  also generate trees around campus buildings, for campuses whose trees are mostly unmapped
  */
-export function buildCampus ({ osm, origin, bounds = [1500, 1000], classrooms, notCampus, minor, flatRoof, managedBy = {}, photos = {}, withinCampus = false }) {
+export function buildCampus ({ osm, origin, bounds = [1500, 1000], classrooms, notCampus, minor, flatRoof, managedBy = {}, photos = {}, withinCampus = false, plantCampus = false }) {
   const NOT_CAMPUS = notCampus
   const MANAGED_BY = managedBy
   const MINOR = minor
@@ -372,6 +373,32 @@ export function buildCampus ({ osm, origin, bounds = [1500, 1000], classrooms, n
         const angle = next() * Math.PI * 2
         const point = [round(cx + Math.cos(angle) * reach), round(cy + Math.sin(angle) * reach)]
         if (free(point, 6.5)) taken.push(point)
+      }
+    }
+    if (plantCampus) {
+      // A few trees around each campus building, kept off the footpaths.
+      const walks = paths.filter(path => path.k === 'path' || path.k === 'steps')
+      const onWalk = point => walks.some(path => {
+        for (let i = 0; i < path.p.length - 1; i++) {
+          const [x1, y1] = path.p[i]
+          const [x2, y2] = path.p[i + 1]
+          const dx = x2 - x1
+          const dy = y2 - y1
+          const t = Math.max(0, Math.min(1, ((point[0] - x1) * dx + (point[1] - y1) * dy) / (dx * dx + dy * dy || 1)))
+          if (Math.hypot(point[0] - x1 - t * dx, point[1] - y1 - t * dy) < 2.6) return true
+        }
+        return false
+      })
+      for (const building of buildings) {
+        const size = Math.sqrt(building.area)
+        for (let count = Math.max(2, Math.min(7, Math.round(size / 9))), tries = 0; count > 0 && tries < 40; tries++) {
+          const angle = next() * Math.PI * 2
+          const reach = size * 0.62 + 5 + next() * 12
+          const point = [round(building.c[0] + Math.cos(angle) * reach), round(building.c[1] + Math.sin(angle) * reach)]
+          if (!free(point, 5.5) || onWalk(point)) continue
+          taken.push(point)
+          count--
+        }
       }
     }
     trees.push(...taken)

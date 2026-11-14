@@ -33,8 +33,8 @@ const COLORS = {
   ballast: 0xcbc6ba,
   context: 0xe9e3d6,
   contextRoof: 0xb9aea1,
-  granite: 0xdcc3b4,
-  graniteDim: 0xebe3d8,
+  granite: CAMPUS.colors.wall,
+  graniteDim: CAMPUS.colors.wallDim,
   slate: 0x7f8d8a,
   slateDim: 0xcdd3cf,
   flatRoof: 0xd4d2cb,
@@ -48,7 +48,7 @@ const COLORS = {
   studyRoof: CAMPUS.colors.studyRoof,
   leaf: [0x5f9d57, 0x6fae5f, 0x4f8f52, 0x7db968, 0x5a9a63],
   floorEmpty: 0xf6f1e8,
-  floorRooms: 0xc8324f
+  floorRooms: CAMPUS.colors.floor
 }
 
 const SLAB = 3.2
@@ -337,10 +337,7 @@ function textPlane (text: string, height: number, color: string, outline: string
 }
 
 export function shortName (name: string): string {
-  return name
-    .replace(/^Lucy and Stanley /, '')
-    .replace(/^Scott /, '')
-    .replace(/ (Hall|Building|Student Center)$/, '')
+  return CAMPUS.labelNames[name] ?? name.replace(/ (Hall|Building|Student Center)$/, '')
 }
 
 export class CampusScene {
@@ -864,7 +861,7 @@ export class CampusScene {
         new THREE.MeshLambertMaterial({ color: COLORS.floorEmpty, transparent: true, opacity: 0.9 })
       )
       mesh.userData.floor = floor
-      const edges = new THREE.LineSegments(edgeGeometry, new THREE.LineBasicMaterial({ color: 0x6d0519, transparent: true, opacity: 0.5 }))
+      const edges = new THREE.LineSegments(edgeGeometry, new THREE.LineBasicMaterial({ color: CAMPUS.colors.floorEdge, transparent: true, opacity: 0.5 }))
       const label = document.createElement('button')
       label.type = 'button'
       label.className = 'floor-label'

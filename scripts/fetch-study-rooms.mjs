@@ -9,6 +9,7 @@
 import { mkdir, readFile, writeFile } from 'node:fs/promises'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { listSpaces } from './lib/libcal.mjs'
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..')
 const raw = join(root, 'data', 'raw', 'study')
@@ -63,13 +64,7 @@ await mkdir(raw, { recursive: true })
 
 // ---- LibCal: what can be booked --------------------------------------------
 const libcal = await cached('libcal-allspaces.html', 'https://wustl.libcal.com/allspaces', false)
-const bookable = []
-for (const match of (libcal ?? '').matchAll(/resources\.push\(\{([\s\S]*?)\}\);/g)) {
-  const field = name => match[1].match(new RegExp(`\\b${name}: (?:"([^"]*)"|(\\d+))`))
-  const text = name => JSON.parse(`"${field(name)?.[1] ?? ''}"`)
-  const number = name => Number(field(name)?.[2] ?? 0)
-  bookable.push({ eid: number('eid'), gid: number('gid'), lid: number('lid'), title: text('title'), url: text('url'), capacity: number('capacity'), group: text('grouping') })
-}
+const bookable = listSpaces(libcal)
 const rooms = bookable.filter(item => !/Display|Terminal/i.test(item.group + item.title))
 console.log(`${rooms.length} bookable study spaces on LibCal`)
 

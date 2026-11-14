@@ -48,6 +48,10 @@ export interface CampusConfig {
   repoUrl: string
   /** Where the scheduled job publishes study-room bookings; '' when the site has none. */
   liveAvailabilityUrl: string
+  /** Map labels for buildings whose full name is too long: building name -> label. */
+  labelNames: Record<string, string>
+  /** Equipment worth a filter chip in the room finder, as it is spelled in the data. */
+  finderEquipment: string[]
   /** Course terms that have a data file, newest first. Empty: no course search. */
   terms: { id: string; label: string }[]
   colors: {
@@ -61,6 +65,12 @@ export interface CampusConfig {
     roof: number
     roofHover: number
     roofDim: number
+    /** Walls of campus buildings, and their dimmed state. */
+    wall: number
+    wallDim: number
+    /** Floors that hold rooms in the floor stack, and the stack's outlines. */
+    floor: number
+    floorEdge: number
     /** Roofs of buildings matching a classroom filter. */
     match: number
     /** Roofs highlighted in study-room mode, and of buildings that only have study rooms. */

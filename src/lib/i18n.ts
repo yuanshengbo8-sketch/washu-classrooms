@@ -81,6 +81,7 @@ const GENERIC = {
   studyFaculty: { en: 'Faculty', zh: '仅教师' },
   studyWhiteboard: { en: 'Whiteboard', zh: '白板' },
   studyComputer: { en: 'Computers', zh: '电脑' },
+  studyScreen: { en: 'Presentation screen', zh: '演示屏幕' },
   studyAv: { en: 'A/V equipment', zh: '影音设备' },
   studyFreeNow: { en: 'Free now', zh: '现在空闲' },
   studyReservable: { en: 'Bookable', zh: '可预约' },
@@ -169,8 +170,30 @@ export function safeSet (key: string, value: string): void {
   }
 }
 
-/** Display names for values that come straight from the CTL directory. */
+/** Display names for values that come straight from the campus classroom directories. */
 const TERMS_ZH: Record<string, string> = {
+  Movable: '活动座椅',
+  'Movable seating': '活动座椅',
+  Fixed: '固定座椅',
+  'Fixed seating': '固定座椅',
+  'Tiered, fixed': '阶梯固定座椅',
+  'Tiered, fixed seating': '阶梯固定座椅',
+  'Tiered, movable seating': '阶梯活动座椅',
+  'Fixed chalkboard': '固定黑板',
+  'Movable chalkboard': '推拉黑板',
+  'Fixed whiteboard': '固定白板',
+  'Movable whiteboard': '移动白板',
+  'Full AV package': '全套影音设备',
+  Interactive: '互动式',
+  'Interactive classroom': '互动教室',
+  'Combination of whiteboard(s) and chalkboard(s)': '白板 + 黑板',
+  'Audio & content lecture capture': '课堂录制（音频 + 屏幕）',
+  'Video lecture capture': '课堂录像',
+  Carpeted: '有地毯',
+  'No carpet': '无地毯',
+  'Covered windows': '窗户可遮光',
+  'No windows': '无窗',
+  'Uncovered windows': '窗户无遮挡',
   'Tablet Armchairs': '带写字板座椅',
   Seminar: '研讨桌',
   'Movable Tables (Rows)': '活动桌（成排）',

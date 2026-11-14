@@ -11,6 +11,11 @@ export const CAMPUS: CampusConfig = {
   timeZone: 'America/Chicago',
   repoUrl: 'https://github.com/yuanshengbo8-sketch/washu-classrooms',
   liveAvailabilityUrl: 'https://raw.githubusercontent.com/yuanshengbo8-sketch/washu-classrooms/live-data/study-availability.json',
+  labelNames: {
+    'Lucy and Stanley Lopata House': 'Lopata House',
+    'Scott Rudolph Hall': 'Rudolph'
+  },
+  finderEquipment: ['Document Camera', 'Wireless Bodypack Microphone', 'Data Projector: Dual', 'Two Cameras', 'Interactive Board', 'Laptop USB-C'],
   terms: [
     { id: '2026F', label: 'Fall 2026' },
     { id: '2027S', label: 'Spring 2027' }
@@ -24,6 +29,10 @@ export const CAMPUS: CampusConfig = {
     roof: 0xa63a3c,
     roofHover: 0xc8273f,
     roofDim: 0xd9bcb9,
+    wall: 0xdcc3b4,
+    wallDim: 0xebe3d8,
+    floor: 0xc8324f,
+    floorEdge: 0x6d0519,
     match: 0xba0c2f,
     study: 0x2c5234,
     studyRoof: 0x4a7f57,
