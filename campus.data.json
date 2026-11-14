@@ -1,0 +1,30 @@
+{
+  "name": "Washington University in St. Louis, Danforth Campus",
+  "origin": [
+    38.6483,
+    -90.3078
+  ],
+  "bbox": [
+    38.6425,
+    -90.3185,
+    38.6535,
+    -90.2975
+  ],
+  "bounds": [
+    1500,
+    1000
+  ],
+  "commonsQuery": "Washington University",
+  "nameNoise": [
+    "Lucy and Stanley ",
+    "Earl E. and Myrtle E. ",
+    "Ann W. Olin ",
+    "Mildred Lane ",
+    "Charles F. ",
+    "Scott "
+  ],
+  "timeZone": "America/Chicago",
+  "libcal": "https://wustl.libcal.com",
+  "userAgent": "campus-classroom-map data build",
+  "commonsMatch": "washington university|wustl|washu|danforth campus"
+}

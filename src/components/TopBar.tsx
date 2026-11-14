@@ -3,6 +3,7 @@ import type { Building, Course, Room } from '../lib/types'
 import type { Lang, StringKey } from '../lib/i18n'
 import { term } from '../lib/i18n'
 import { searchBuildings, searchCourses, searchRooms } from '../lib/search'
+import { CAMPUS } from '../campus'
 import { Icon } from './Icon'
 
 interface TopBarProps {
@@ -75,7 +76,7 @@ export function TopBar (props: TopBarProps) {
     <div className='topbar'>
       <div className='search' ref={box}>
         <div className='search__field'>
-          <span className='search__brand' aria-hidden='true'>W</span>
+          <span className='search__brand' aria-hidden='true'>{CAMPUS.brand}</span>
           <input
             ref={input}
             className='search__input'

@@ -1,6 +1,7 @@
+import { CAMPUS } from '../campus'
 import { safeGet, safeSet } from './i18n'
 
-const FAVORITES_KEY = 'washu-classrooms.favorites'
+const FAVORITES_KEY = `${CAMPUS.id}.favorites`
 
 export function loadFavorites (): Set<string> {
   try {

@@ -12,7 +12,8 @@ import { fileURLToPath } from 'node:url'
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..')
 const output = process.argv[2] ?? join(root, 'public', 'data', 'study-availability.json')
-const UA = 'washu-classrooms study-room availability (https://github.com/yuanshengbo8-sketch/washu-classrooms)'
+const site = JSON.parse(await readFile(join(root, 'campus.data.json'), 'utf8'))
+const UA = site.userAgent
 const sleep = ms => new Promise(resolve => setTimeout(resolve, ms))
 
 const directory = JSON.parse(await readFile(join(root, 'public', 'data', 'study-rooms.json'), 'utf8'))
@@ -21,9 +22,9 @@ for (const room of directory.rooms) {
   if (room.eid) groups.set(`${room.lid}:${room.gid}`, { lid: room.lid, gid: room.gid })
 }
 
-/** Calendar date in St. Louis, `offset` days from today. */
+/** Calendar date on campus, `offset` days from today. */
 function day (offset) {
-  const parts = new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Chicago', year: 'numeric', month: '2-digit', day: '2-digit' })
+  const parts = new Intl.DateTimeFormat('en-CA', { timeZone: site.timeZone, year: 'numeric', month: '2-digit', day: '2-digit' })
     .formatToParts(new Date(Date.now() + offset * 86400000))
   const get = type => parts.find(part => part.type === type).value
   return `${get('year')}-${get('month')}-${get('day')}`
@@ -38,13 +39,13 @@ for (const { lid, gid } of groups.values()) {
   // robots.txt asks for ten seconds between requests.
   if (!first) await sleep(10500)
   first = false
-  const response = await fetch('https://wustl.libcal.com/spaces/availability/grid', {
+  const response = await fetch(`${site.libcal}/spaces/availability/grid`, {
     method: 'POST',
     headers: {
       'user-agent': UA,
       'content-type': 'application/x-www-form-urlencoded; charset=UTF-8',
       'x-requested-with': 'XMLHttpRequest',
-      referer: 'https://wustl.libcal.com/allspaces'
+      referer: `${site.libcal}/allspaces`
     },
     body: new URLSearchParams({ lid, gid, eid: -1, seat: 0, seatId: 0, zone: 0, start, end, pageIndex: 0, pageSize: 50 }),
     signal: AbortSignal.timeout(45000)
@@ -69,5 +70,5 @@ for (const { lid, gid } of groups.values()) {
 }
 
 if (Object.keys(rooms).length === 0) throw new Error('LibCal returned no slots')
-await writeFile(output, JSON.stringify({ updated: new Date().toISOString(), timeZone: 'America/Chicago', source: 'https://wustl.libcal.com/allspaces', rooms }))
+await writeFile(output, JSON.stringify({ updated: new Date().toISOString(), timeZone: site.timeZone, source: `${site.libcal}/allspaces`, rooms }))
 console.log(`${Object.keys(rooms).length} rooms, ${start} to ${end}, written to ${output}`)

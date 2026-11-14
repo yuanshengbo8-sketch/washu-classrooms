@@ -1,3 +1,4 @@
+import { CAMPUS } from '../campus'
 import * as THREE from 'three'
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js'
 import type { Room } from '../lib/types'
@@ -186,7 +187,7 @@ function slideTexture (title: string): THREE.CanvasTexture {
   const context = canvas.getContext('2d') as CanvasRenderingContext2D
   context.fillStyle = '#ffffff'
   context.fillRect(0, 0, 1024, 640)
-  context.fillStyle = '#ba0c2f'
+  context.fillStyle = CAMPUS.colors.primary
   context.fillRect(0, 0, 1024, 108)
   context.fillStyle = '#ffffff'
   context.font = '600 54px Georgia, serif'
@@ -202,7 +203,7 @@ function slideTexture (title: string): THREE.CanvasTexture {
     context.fillText(`${size}px  The quick brown fox jumps over the lazy dog`, 44, y)
     y += size + 30
   }
-  context.fillStyle = '#2c5234'
+  context.fillStyle = CAMPUS.colors.accent
   context.fillRect(44, 590, 936, 8)
   const texture = new THREE.CanvasTexture(canvas)
   texture.colorSpace = THREE.SRGBColorSpace
@@ -329,7 +330,7 @@ export class SeatScene {
     ceiling.rotation.x = Math.PI / 2
     ceiling.position.set(0, height, depth / 2)
     this.scene.add(ceiling)
-    const band = new THREE.Mesh(new THREE.PlaneGeometry(width, 0.16), new THREE.MeshBasicMaterial({ color: 0xba0c2f }))
+    const band = new THREE.Mesh(new THREE.PlaneGeometry(width, 0.16), new THREE.MeshBasicMaterial({ color: CAMPUS.colors.match }))
     band.position.set(0, height - 0.24, 0.01)
     this.scene.add(band)
 

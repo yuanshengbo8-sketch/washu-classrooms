@@ -477,7 +477,7 @@ export function RoomDetail ({ room, building, lang, t, favorite, onFavorite, onS
           ) : null}
           {room.url ? (
             <a className='button button--ghost' href={room.url} target='_blank' rel='noreferrer'>
-              <Icon name='external' size={16} />{room.managedBy ? t('sourcePage') : t('ctlPage')}
+              <Icon name='external' size={16} />{room.managedBy ? t('sourcePage') : t('directoryPage')}
             </a>
           ) : null}
         </div>

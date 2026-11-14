@@ -474,7 +474,7 @@ h2, h3, p { margin: 0; }
   text-align: left;
   transition: border-color 0.15s, box-shadow 0.15s, transform 0.15s;
 }
-.room-card:hover { border-color: var(--red); box-shadow: 0 4px 14px rgba(186, 12, 47, 0.12); transform: translateY(-1px); }
+.room-card:hover { border-color: var(--red); box-shadow: 0 4px 14px color-mix(in srgb, var(--red) 12%, transparent); transform: translateY(-1px); }
 .room-card__thumb {
   flex: none;
   width: 92px;
@@ -680,7 +680,7 @@ h2, h3, p { margin: 0; }
 .chip:disabled { opacity: 0.45; cursor: default; }
 .study-list { display: grid; gap: 8px; }
 .study-card { border: 1px solid var(--line); border-radius: 12px; background: #fff; overflow: hidden; }
-.study-card--open { border-color: var(--green); box-shadow: 0 2px 10px rgba(44, 82, 52, 0.12); }
+.study-card--open { border-color: var(--green); box-shadow: 0 2px 10px color-mix(in srgb, var(--green) 12%, transparent); }
 .study-card__head {
   display: flex; align-items: center; justify-content: space-between; gap: 10px;
   width: 100%; padding: 10px 12px; border: 0; background: none; text-align: left; cursor: pointer; font: inherit; color: inherit;
@@ -719,7 +719,7 @@ h2, h3, p { margin: 0; }
   border: 3px solid #77776f; border-radius: 50%; background: rgba(119, 119, 111, 0.16); box-shadow: 0 0 0 1.5px #fff; cursor: pointer;
 }
 .plan__pin--free { border-color: #2f8f46; background: rgba(47, 143, 70, 0.2); }
-.plan__pin--busy { border-color: var(--red); background: rgba(186, 12, 47, 0.18); }
+.plan__pin--busy { border-color: var(--red); background: color-mix(in srgb, var(--red) 18%, transparent); }
 .plan__pin--active { width: 26px; height: 26px; margin: -13px 0 0 -13px; border-width: 4px; box-shadow: 0 0 0 2px #fff, 0 0 0 4px rgba(31, 38, 35, 0.8); z-index: 1; }
 .plan__caption { font-size: 12px; color: var(--muted); }
 .plan__caption a { color: inherit; }

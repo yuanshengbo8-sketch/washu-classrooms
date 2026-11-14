@@ -10,15 +10,14 @@ import { TopBar } from './components/TopBar'
 import { BuildingPanel, FinderPanel, RoomDetail } from './components/Panels'
 import { AboutModal, CourseModal } from './components/Modals'
 import { StudyPanel } from './components/StudyPanel'
+import { CAMPUS } from './campus'
 import { LEGEND_TITLE, SCHOOLS, SCHOOL_ORDER } from './lib/schools'
 
 const CampusMap = lazy(() => import('./components/CampusMap'))
 const SeatView = lazy(() => import('./components/SeatView'))
 
-const TERMS = [
-  { id: '2026F', label: 'Fall 2026' },
-  { id: '2027S', label: 'Spring 2027' }
-]
+/** Course terms; a campus without course data has none and gets no course search. */
+const TERMS = CAMPUS.terms
 
 const dataUrl = (name: string) => `${import.meta.env.BASE_URL}data/${name}`
 
@@ -56,7 +55,7 @@ export function App () {
   const [legendOpen, setLegendOpen] = useState(() => window.innerWidth > 780)
   const [seatRoom, setSeatRoom] = useState<Room | null>(null)
   const [aboutOpen, setAboutOpen] = useState(false)
-  const [termId, setTermId] = useState(TERMS[0].id)
+  const [termId, setTermId] = useState(TERMS[0]?.id ?? '')
   const [courseData, setCourseData] = useState<Record<string, Course[]>>({})
   const [courseCode, setCourseCode] = useState<string | null>(null)
 
@@ -278,7 +277,7 @@ export function App () {
   if (!campus || !data) {
     return (
       <div className='splash'>
-        <div className='splash__mark'>W</div>
+        <div className='splash__mark'>{CAMPUS.brand}</div>
         <p>{t('loading')}</p>
       </div>
     )
@@ -290,7 +289,7 @@ export function App () {
         {mapFailed ? (
           <div className='splash splash--inline'><p>{t('noWebgl')}</p></div>
         ) : (
-          <Suspense fallback={<div className='splash splash--inline'><div className='splash__mark'>W</div><p>{t('loading')}</p></div>}>
+          <Suspense fallback={<div className='splash splash--inline'><div className='splash__mark'>{CAMPUS.brand}</div><p>{t('loading')}</p></div>}>
             <CampusMap
               campus={campus}
               t={t}
@@ -314,14 +313,14 @@ export function App () {
           t={t}
           buildings={buildings}
           rooms={rooms}
-          courses={courses}
+          courses={TERMS.length > 0 ? courses : []}
           finderOpen={finderOpen && !buildingId && !favoritesOnly}
           studyOpen={studyOpen && !buildingId}
           studyFree={studyFree}
           onStudy={openStudy}
           filterCount={filterCount}
           favoriteCount={favorites.size}
-          onNeedCourses={() => loadTerm(termId)}
+          onNeedCourses={() => { if (TERMS.length > 0) loadTerm(termId) }}
           onBuilding={openBuilding}
           onRoom={target => openRoom(target, 'building')}
           onCourse={target => setCourseCode(target.code)}
@@ -329,7 +328,7 @@ export function App () {
           onFavorites={() => openFinder(true)}
           onLang={() => {
             const next: Lang = lang === 'zh' ? 'en' : 'zh'
-            safeSet('washu-classrooms.lang', next)
+            safeSet(`${CAMPUS.id}.lang`, next)
             setLang(next)
           }}
           onAbout={() => setAboutOpen(true)}

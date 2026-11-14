@@ -91,6 +91,15 @@ npm run data:courses -- "2027 Spring"   # 生成 courses-2027S.json
 
 使用 React 19、TypeScript、Three.js 和 Vite。3D 代码按需加载。没有服务器，也不需要 API 密钥：构建产物是静态文件，由 `.github/workflows/deploy.yml` 部署到 GitHub Pages。
 
+## 通用核心
+
+其他学校的教室地图用的是同一套代码。[`shared.json`](shared.json) 里列出的文件（React 应用、3D 场景、`scripts/lib/` 里的地图生成、workflow）在每个学校的仓库里完全相同；属于本校的只有 `src/campus.ts`、`src/lib/schools.ts`、`campus.data.json`、`index.html`、数据和数据脚本。改了通用文件之后，同步到另一个仓库：
+
+```sh
+node scripts/sync-shared.mjs ../ucd-classrooms           # 复制过去
+node scripts/sync-shared.mjs ../ucd-classrooms --check   # 只列出差异
+```
+
 ## 数据与准确性
 
 - **教室：** [CTL Classroom Directory](https://ctl.wustl.edu/classrooms/)，31 栋楼共 129 间教室，是教务处统一排课的公共教室。照片、座位图、360° 全景都链接自 ctl.wustl.edu，版权归 WashU。

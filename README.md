@@ -91,6 +91,15 @@ Rooms that a school runs itself are listed by hand in [`data/extra-rooms.json`](
 
 React 19, TypeScript, Three.js and Vite. The 3D code is loaded on demand. There is no server and no API key: the build is static files, deployed to GitHub Pages by `.github/workflows/deploy.yml`.
 
+## Shared core
+
+The same code runs the classroom maps for other campuses. Everything listed in [`shared.json`](shared.json) (the React app, the 3D scene, the map builder in `scripts/lib/`, the workflows) is identical in every campus repository; what belongs to this campus is `src/campus.ts`, `src/lib/schools.ts`, `campus.data.json`, `index.html`, the data and the data scripts. After changing a shared file, copy it to the other repository:
+
+```sh
+node scripts/sync-shared.mjs ../ucd-classrooms           # copy
+node scripts/sync-shared.mjs ../ucd-classrooms --check   # only list differences
+```
+
 ## Data and accuracy
 
 - **Classrooms:** the [CTL Classroom Directory](https://ctl.wustl.edu/classrooms/), 129 rooms in 31 buildings. It covers the pooled classrooms the Registrar schedules. Photos, seating charts and 360° tours are linked from ctl.wustl.edu and remain WashU's.

@@ -1,4 +1,6 @@
-/** A study space from the WashU Libraries directory. */
+import { CAMPUS } from '../campus'
+
+/** A study space from the campus library's directory. */
 export interface StudyRoom {
   id: string
   name: string
@@ -13,7 +15,7 @@ export interface StudyRoom {
   reservable: boolean
   features: string[]
   text: string
-  /** The room's page on library.washu.edu. */
+  /** The room's page on the library's site. */
   url: string
   /** Where the room is on its level's floor plan, as fractions of the image's width and height. */
   spot?: [number, number]
@@ -59,7 +61,6 @@ export type StudyStatus =
   | { kind: 'walkin' }
   | { kind: 'unknown' }
 
-const LIVE_URL = 'https://raw.githubusercontent.com/yuanshengbo8-sketch/washu-classrooms/live-data/study-availability.json'
 /** Older than this, the grid is not shown as live. */
 const STALE_MS = 75 * 60 * 1000
 
@@ -74,7 +75,10 @@ async function getJson<T> (url: string): Promise<T | null> {
 
 /** The newest grid available: the published live copy, or the one built into the site. */
 export async function loadAvailability (bundledUrl: string): Promise<Availability | null> {
-  const [live, bundled] = await Promise.all([getJson<Availability>(LIVE_URL), getJson<Availability>(bundledUrl)])
+  const [live, bundled] = await Promise.all([
+    CAMPUS.liveAvailabilityUrl ? getJson<Availability>(CAMPUS.liveAvailabilityUrl) : Promise.resolve(null),
+    getJson<Availability>(bundledUrl)
+  ])
   if (live && bundled) return live.updated >= bundled.updated ? live : bundled
   return live ?? bundled
 }
@@ -83,10 +87,10 @@ export function isFresh (availability: Availability | null, now = Date.now()): b
   return availability !== null && now - Date.parse(availability.updated) < STALE_MS
 }
 
-/** Date and minutes after midnight in St. Louis, whatever the viewer's own time zone. */
+/** Date and minutes after midnight on campus, whatever the viewer's own time zone. */
 export function campusNow (now = new Date()): { date: string; minutes: number } {
   const parts = new Intl.DateTimeFormat('en-CA', {
-    timeZone: 'America/Chicago', year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hourCycle: 'h23'
+    timeZone: CAMPUS.timeZone, year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hourCycle: 'h23'
   }).formatToParts(now)
   const get = (type: string) => parts.find(part => part.type === type)?.value ?? '0'
   return { date: `${get('year')}-${get('month')}-${get('day')}`, minutes: Number(get('hour')) * 60 + Number(get('minute')) }

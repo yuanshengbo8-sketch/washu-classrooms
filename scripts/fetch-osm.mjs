@@ -1,17 +1,16 @@
-// Downloads Danforth Campus geometry (buildings, paths, green space) from
-// OpenStreetMap through the Overpass API into data/raw/osm.json.
+// Downloads the campus geometry (buildings, paths, green space, trees) from
+// OpenStreetMap through the Overpass API into data/raw/osm.json. The area is
+// the `bbox` in campus.data.json: south, west, north, east.
 // Map data © OpenStreetMap contributors, ODbL.
 //
 //   node scripts/fetch-osm.mjs
 
-import { mkdir, writeFile } from 'node:fs/promises'
+import { mkdir, readFile, writeFile } from 'node:fs/promises'
 import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 const ROOT = fileURLToPath(new URL('..', import.meta.url))
-// south, west, north, east: Danforth Campus plus the South 40 and the blocks
-// north of Forest Park Parkway.
-export const BBOX = [38.6425, -90.3185, 38.6535, -90.2975]
+export const BBOX = JSON.parse(await readFile(join(ROOT, 'campus.data.json'), 'utf8')).bbox
 const box = BBOX.join(',')
 const query = `[out:json][timeout:90];
 (
@@ -26,6 +25,8 @@ const query = `[out:json][timeout:90];
   way["natural"~"wood|water|scrub|tree_row"](${box});
   node["natural"="tree"](${box});
   way["amenity"~"parking|fountain"](${box});
+  way["amenity"="university"](${box});
+  relation["amenity"="university"](${box});
 );
 out body geom;`
 

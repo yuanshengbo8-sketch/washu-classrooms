@@ -17,13 +17,8 @@ const buildings = campus.buildings.filter(building => !building.minor)
 
 const strip = html => String(html ?? '').replace(/<[^>]+>/g, ' ').replace(/&amp;/g, '&').replace(/&quot;/g, '"').replace(/&#0?39;/g, "'").replace(/\s+/g, ' ').trim()
 /** The part of a building's name that tells it apart: "Simon Hall", "Olin Library". */
-const core = name => name
-  .replace(/^Lucy and Stanley /, '')
-  .replace(/^Earl E\. and Myrtle E\. /, '')
-  .replace(/^Ann W\. Olin /, '')
-  .replace(/^Mildred Lane /, '')
-  .replace(/^Charles F\. /, '')
-  .replace(/^Scott /, '')
+const site = JSON.parse(await readFile(join(root, 'campus.data.json'), 'utf8'))
+const core = name => (site.nameNoise ?? []).reduce((text, noise) => (text.startsWith(noise) ? text.slice(noise.length) : text), name)
 
 async function search (query) {
   const url = new URL('https://commons.wikimedia.org/w/api.php')
@@ -43,7 +38,8 @@ async function search (query) {
   return Object.values(data.query?.pages ?? {}).sort((a, b) => a.index - b.index)
 }
 
-const WASHU = /washington university|wustl|washu|danforth campus/i
+// Words that tie a photo to this campus; set in campus.data.json.
+const WASHU = new RegExp(site.commonsMatch, 'i')
 const NOT_EXTERIOR = /interior|inside|lecture|plaque|sign|statue|map|logo|seal|portrait|construction|aerial|panorama of the|window detail|stained|organ|commencement|ceremony|protest|encampment|debate|speaker|speech|\b(18|19[0-4])\d\b/i
 
 // Resumable: buildings already searched are kept.
@@ -56,7 +52,7 @@ for (const building of buildings) {
   const name = core(building.name)
   let pages = []
   try {
-    pages = await search(`"${name}" "Washington University"`)
+    pages = await search(`"${name}" "${site.commonsQuery}"`)
   } catch (error) {
     console.warn(`${building.name}: ${error.message}`)
     continue

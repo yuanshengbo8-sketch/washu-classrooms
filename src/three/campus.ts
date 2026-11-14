@@ -3,6 +3,7 @@ import { MapControls } from 'three/addons/controls/MapControls.js'
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js'
 import type { Building, BuildingPart, Campus, Point } from '../lib/types'
 import { floorLabel } from '../lib/types'
+import { CAMPUS } from '../campus'
 import { SCHOOLS, schoolOf } from '../lib/schools'
 
 const COLORS = {
@@ -37,14 +38,14 @@ const COLORS = {
   slate: 0x7f8d8a,
   slateDim: 0xcdd3cf,
   flatRoof: 0xd4d2cb,
-  school: 0xc99a8c,
-  schoolHover: 0xb9806f,
-  red: 0xa63a3c,
-  redHover: 0xc8273f,
-  redDim: 0xd9bcb9,
-  match: 0xba0c2f,
-  green: 0x2c5234,
-  studyRoof: 0x4a7f57,
+  school: CAMPUS.colors.managedRoof,
+  schoolHover: CAMPUS.colors.managedRoofHover,
+  red: CAMPUS.colors.roof,
+  redHover: CAMPUS.colors.roofHover,
+  redDim: CAMPUS.colors.roofDim,
+  match: CAMPUS.colors.match,
+  green: CAMPUS.colors.study,
+  studyRoof: CAMPUS.colors.studyRoof,
   leaf: [0x5f9d57, 0x6fae5f, 0x4f8f52, 0x7db968, 0x5a9a63],
   floorEmpty: 0xf6f1e8,
   floorRooms: 0xc8324f

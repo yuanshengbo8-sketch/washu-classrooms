@@ -3,11 +3,12 @@ import type { ReactNode } from 'react'
 import type { Course } from '../lib/types'
 import type { StringKey } from '../lib/i18n'
 import { formatMeeting } from '../lib/search'
+import { CAMPUS } from '../campus'
 import { Icon } from './Icon'
 
 type T = (key: StringKey, vars?: Record<string, string | number>) => string
 
-export const REPO_URL = 'https://github.com/yuanshengbo8-sketch/washu-classrooms'
+export const REPO_URL = CAMPUS.repoUrl
 
 function Modal ({ title, subtitle, onClose, closeLabel, children }: { title: string; subtitle?: string; onClose: () => void; closeLabel: string; children: ReactNode }) {
   useEffect(() => {
@@ -100,9 +101,13 @@ export function AboutModal ({ t, fetched, onClose }: { t: T; fetched: string; on
       <p>{t('aboutBody1')}</p>
       <h3 className='section-title'>{t('aboutData')}</h3>
       <ul className='about-list'>
-        <li>{t('aboutClassrooms')} <a href='https://ctl.wustl.edu/classrooms/' target='_blank' rel='noreferrer'>ctl.wustl.edu/classrooms</a></li>
-        <li>{t('aboutCourses')} <a href='https://registrar.washu.edu/classes-registration/class-schedule-search/' target='_blank' rel='noreferrer'>registrar.washu.edu</a></li>
-        <li>{t('aboutStudy')} <a href='https://library.washu.edu/study-rooms/' target='_blank' rel='noreferrer'>library.washu.edu/study-rooms</a></li>
+        <li>{t('aboutClassrooms')} <a href={CAMPUS.sources.classrooms.url} target='_blank' rel='noreferrer'>{CAMPUS.sources.classrooms.label}</a></li>
+        {CAMPUS.sources.courses ? (
+          <li>{t('aboutCourses')} <a href={CAMPUS.sources.courses.url} target='_blank' rel='noreferrer'>{CAMPUS.sources.courses.label}</a></li>
+        ) : null}
+        {CAMPUS.sources.study ? (
+          <li>{t('aboutStudy')} <a href={CAMPUS.sources.study.url} target='_blank' rel='noreferrer'>{CAMPUS.sources.study.label}</a></li>
+        ) : null}
         <li>{t('aboutMap')} <a href='https://www.openstreetmap.org/copyright' target='_blank' rel='noreferrer'>openstreetmap.org/copyright</a></li>
         <li>{t('aboutFloors')}</li>
       </ul>

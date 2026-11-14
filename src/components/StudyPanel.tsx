@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import type { Lang, StringKey } from '../lib/i18n'
 import type { Availability, FloorPlans, StudyRoom, StudyStatus } from '../lib/study'
 import { campusNow, clock, gridFor, isFresh, statusOf } from '../lib/study'
+import { CAMPUS } from '../campus'
 import { Icon } from './Icon'
 
 type T = (key: StringKey, vars?: Record<string, string | number>) => string
@@ -64,7 +65,7 @@ export interface PlanPin {
 }
 
 interface FloorPlanProps {
-  /** The plan image on library.washu.edu. */
+  /** The plan image on the library's site. */
   src: string
   /** The page the plan comes from, linked if the image cannot load. */
   page: string
@@ -303,20 +304,23 @@ export function StudyPanel ({ rooms, availability, plans, lang, t, onLocate, onC
           </div>
         ))}
 
-        <h3 className='section-title'>{t('studyElsewhere')}</h3>
-        <div className='notice notice--plain'>
-          <p><b>{t('studyOlinTitle')}</b></p>
-          <p>{t('studyOlinBody')}</p>
-          <p><a href='https://reserve.wustl.edu/' target='_blank' rel='noreferrer'>reserve.wustl.edu</a> · <a href='https://sites.wustl.edu/olings/reserving-group-rooms/' target='_blank' rel='noreferrer'>{t('studyOlinGuide')}</a></p>
-        </div>
-        <div className='notice notice--plain'>
-          <p><b>{t('studyClassroomsTitle')}</b></p>
-          <p>{t('studyClassroomsBody')}</p>
-          <p><a href='https://sites.wustl.edu/olings/reserving-a-classroom/' target='_blank' rel='noreferrer'>{t('studyClassroomsLink')}</a></p>
-        </div>
-        <p className='study-source'>
-          {t('studySource')} <a href='https://library.washu.edu/study-rooms/' target='_blank' rel='noreferrer'>library.washu.edu/study-rooms</a> · <a href='https://wustl.libcal.com/allspaces' target='_blank' rel='noreferrer'>wustl.libcal.com</a>
-        </p>
+        {CAMPUS.studyElsewhere.length > 0 ? <h3 className='section-title'>{t('studyElsewhere')}</h3> : null}
+        {CAMPUS.studyElsewhere.map(card => (
+          <div key={card.title.en} className='notice notice--plain'>
+            <p><b>{card.title[lang]}</b></p>
+            <p>{card.body[lang]}</p>
+            <p>
+              {card.links.map((link, index) => (
+                <span key={link.url}>{index > 0 ? ' · ' : ''}<a href={link.url} target='_blank' rel='noreferrer'>{link.label[lang]}</a></span>
+              ))}
+            </p>
+          </div>
+        ))}
+        {CAMPUS.sources.study ? (
+          <p className='study-source'>
+            {t('studySource')} <a href={CAMPUS.sources.study.url} target='_blank' rel='noreferrer'>{CAMPUS.sources.study.label}</a>
+          </p>
+        ) : null}
       </div>
     </section>
   )

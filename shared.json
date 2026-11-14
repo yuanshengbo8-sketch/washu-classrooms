@@ -1,0 +1,42 @@
+{
+  "note": "Files that are identical in every campus site. Change them in one repository, then run: node scripts/sync-shared.mjs <path to the other repository>. Everything not listed here belongs to one campus.",
+  "folders": [
+    "src/components",
+    "src/three",
+    "scripts/lib"
+  ],
+  "files": [
+    "src/App.tsx",
+    "src/main.tsx",
+    "src/styles.css",
+    "src/lib/config.ts",
+    "src/lib/i18n.ts",
+    "src/lib/search.ts",
+    "src/lib/store.ts",
+    "src/lib/study.ts",
+    "src/lib/types.ts",
+    "scripts/fetch-osm.mjs",
+    "scripts/fetch-availability.mjs",
+    "scripts/fetch-building-photos.mjs",
+    "scripts/sync-shared.mjs",
+    "shared.json",
+    "tsconfig.json",
+    "vite.config.ts",
+    ".gitignore",
+    ".gitattributes",
+    ".github/workflows/deploy.yml",
+    ".github/workflows/study-availability.yml"
+  ],
+  "campusOnly": [
+    "src/campus.ts",
+    "src/lib/schools.ts",
+    "campus.data.json",
+    "index.html",
+    "public/",
+    "data/",
+    "scripts/build-data.mjs",
+    "README.md",
+    "README.zh-CN.md",
+    "package.json"
+  ]
+}
