@@ -67,7 +67,25 @@ const STRINGS = {
     en: 'WashU does not publish room assignments, so sections are not linked to classrooms here. Check Workday for the room.',
     zh: 'WashU 未公开每节课的上课教室，所以这里无法把课程对应到教室；具体教室请在 Workday 查看。'
   },
-  noCtlRooms: { en: 'No classrooms listed in the CTL directory', zh: 'CTL 目录中没有该楼的教室' },
+  noRoomsListed: { en: 'No classrooms listed', zh: '暂无教室数据' },
+  schoolManaged: {
+    en: '{school} schedules the classrooms in this building itself, so they are not in the Registrar’s pooled classroom directory and WashU publishes no list of them.',
+    zh: '这栋楼的教室由 {school} 自己排课，不在教务处的公共教室目录里，WashU 也没有公开的教室清单。'
+  },
+  notPooled: {
+    en: 'This building has no classrooms in the Registrar’s pooled classroom directory.',
+    zh: '这栋楼没有教室在教务处的公共教室目录里。'
+  },
+  partialList: {
+    en: 'Only rooms that a public WashU page names are listed here. The building has more.',
+    zh: '这里只列出了 WashU 公开页面上出现过的房间，这栋楼实际还有更多教室。'
+  },
+  schoolRoom: {
+    en: 'Scheduled by {school}. It is not in the CTL directory, so there are no photos, seat count or equipment list.',
+    zh: '由 {school} 排课，不在 CTL 目录里，所以没有照片、座位数和设备清单。'
+  },
+  sourcePage: { en: 'Source page', zh: '来源页面' },
+  knowRoom: { en: 'Know a room here? Add it on GitHub', zh: '知道这里的教室？到 GitHub 补充' },
   loading: { en: 'Loading campus…', zh: '正在加载校园…' },
   loadError: { en: 'Could not load the campus data.', zh: '校园数据加载失败。' },
   noWebgl: { en: '3D map is unavailable in this browser. Use the room list instead.', zh: '此浏览器无法显示 3D 地图，请使用教室列表。' },

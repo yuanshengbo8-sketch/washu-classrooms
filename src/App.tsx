@@ -61,7 +61,7 @@ export function App () {
         if (room) {
           setBuildingId(room.building)
           setRoomId(room.id)
-        } else if (url.building && loadedCampus.buildings.some(item => item.id === url.building && item.rooms > 0)) {
+        } else if (url.building && loadedCampus.buildings.some(item => item.id === url.building && !item.minor)) {
           setBuildingId(url.building)
         }
       })

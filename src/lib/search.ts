@@ -14,7 +14,7 @@ export function searchBuildings (buildings: Building[], query: string, limit = 5
   const queryCompact = compact(query)
   if (!queryCompact) return []
   return buildings
-    .filter(building => building.rooms > 0 && matches(building.name.toLowerCase(), compact(building.name), queryTokens, queryCompact))
+    .filter(building => !building.minor && matches(building.name.toLowerCase(), compact(building.name), queryTokens, queryCompact))
     .sort((a, b) => b.rooms - a.rooms)
     .slice(0, limit)
 }

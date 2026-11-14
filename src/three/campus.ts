@@ -18,6 +18,8 @@ const COLORS = {
   context: 0xebe7de,
   stone: 0xd8ccba,
   stoneDim: 0xe4ddd0,
+  school: 0xd9a79c,
+  schoolHover: 0xcf8f84,
   red: 0xba0c2f,
   redHover: 0xd8254a,
   redDim: 0xdcb4bb,
@@ -282,7 +284,7 @@ export class CampusScene {
     for (const building of campus.buildings) {
       const geometry = extrude(building.parts, building.h)
       const hasRooms = building.rooms > 0
-      const material = new THREE.MeshLambertMaterial({ color: hasRooms ? COLORS.red : COLORS.stone })
+      const material = new THREE.MeshLambertMaterial({ color: this.baseColor(building) })
       const mesh = new THREE.Mesh(geometry, material)
       mesh.castShadow = true
       mesh.receiveShadow = true
@@ -303,17 +305,20 @@ export class CampusScene {
       const radius = geometry.boundingSphere?.radius ?? 40
 
       let label: HTMLButtonElement | null = null
-      if (hasRooms) {
+      if (!building.minor) {
         label = document.createElement('button')
         label.type = 'button'
-        label.className = 'map-label'
+        label.className = hasRooms ? 'map-label' : 'map-label map-label--plain'
         const name = document.createElement('span')
         name.className = 'map-label__name'
         name.textContent = shortName(building.name)
-        const count = document.createElement('span')
-        count.className = 'map-label__count'
-        count.textContent = String(building.rooms)
-        label.append(name, count)
+        label.append(name)
+        if (hasRooms) {
+          const count = document.createElement('span')
+          count.className = 'map-label__count'
+          count.textContent = String(building.rooms)
+          label.append(count)
+        }
         label.title = building.name
         label.addEventListener('click', () => this.callbacks.onSelect(building.id))
         label.addEventListener('pointerenter', () => this.setHovered(building.id))
@@ -357,6 +362,12 @@ export class CampusScene {
       Math.cos(polar) * distance,
       Math.cos(azimuth) * Math.sin(polar) * distance
     )
+  }
+
+  /** Red: classrooms we have data for. Blush: a school runs its rooms and publishes no list. */
+  private baseColor (building: Building): number {
+    if (building.rooms > 0) return COLORS.red
+    return building.managedBy ? COLORS.school : COLORS.stone
   }
 
   // ---- public API ----------------------------------------------------------
@@ -556,9 +567,11 @@ export class CampusScene {
       const hasRooms = building.rooms > 0
       const filteredOut = hasRooms && this.matches !== null && (this.matches.get(building.id) ?? 0) === 0
       const dim = filteredOut || (this.selectedId !== null && this.selectedId !== building.id)
-      let color = hasRooms ? COLORS.red : COLORS.stone
+      let color = this.baseColor(building)
       if (dim) color = hasRooms ? COLORS.redDim : COLORS.stoneDim
-      if (hasRooms && !filteredOut && this.hoveredId === building.id) color = COLORS.redHover
+      else if (this.hoveredId === building.id && !building.minor) {
+        color = hasRooms ? COLORS.redHover : building.managedBy ? COLORS.schoolHover : COLORS.stoneDim
+      }
       mesh.material.color.setHex(color)
       if (entry.edges) (entry.edges.material as THREE.LineBasicMaterial).opacity = dim ? 0.15 : 0.45
       if (label) {
@@ -618,7 +631,7 @@ export class CampusScene {
       return
     }
     const entry = this.entries.get(object.userData.id)
-    if (entry && entry.building.rooms > 0) this.callbacks.onSelect(entry.building.id)
+    if (entry && !entry.building.minor) this.callbacks.onSelect(entry.building.id)
   }
 
   private readonly onPointerMove = (event: PointerEvent): void => {
@@ -633,8 +646,8 @@ export class CampusScene {
     const id = floor === null ? ((object?.userData.id as string | undefined) ?? null) : null
     this.setHovered(id)
     const entry = id ? this.entries.get(id) : undefined
-    this.renderer.domElement.style.cursor = floor !== null || (entry && entry.building.rooms > 0) ? 'pointer' : ''
-    if (entry && entry.building.rooms === 0) {
+    this.renderer.domElement.style.cursor = floor !== null || (entry && !entry.building.minor) ? 'pointer' : ''
+    if (entry && entry.building.minor) {
       const rect = this.container.getBoundingClientRect()
       this.tooltip.textContent = entry.building.name
       this.tooltip.style.transform = `translate(${event.clientX - rect.left + 14}px, ${event.clientY - rect.top + 14}px)`
@@ -698,9 +711,14 @@ export class CampusScene {
     const ordered = [...this.entries.values()]
       .filter(entry => entry.label)
       .sort((a, b) => this.labelPriority(b) - this.labelPriority(a))
+    const distance = this.camera.position.distanceTo(this.controls.target)
     for (const entry of ordered) {
       const label = entry.label as HTMLButtonElement
-      if (entry.building.id === this.selectedId) {
+      // Buildings without classroom data only get a label once the map is
+      // close enough to have room for it, and never while a filter is on.
+      const plain = entry.building.rooms === 0
+      const tooFar = plain && (this.matches !== null || distance > (entry.building.managedBy ? 2400 : 1250))
+      if (entry.building.id === this.selectedId || tooFar) {
         label.style.visibility = 'hidden'
         continue
       }
@@ -738,7 +756,10 @@ export class CampusScene {
   }
 
   private labelPriority (entry: BuildingEntry): number {
-    const count = this.matches ? this.matches.get(entry.building.id) ?? 0 : entry.building.rooms
-    return count + (entry.building.id === this.hoveredId ? 1000 : 0)
+    const { building } = entry
+    const hover = building.id === this.hoveredId ? 100000 : 0
+    if (building.rooms === 0) return hover + (building.managedBy ? 5000 : Math.min(building.area / 10, 4000))
+    const count = this.matches ? this.matches.get(building.id) ?? 0 : building.rooms
+    return hover + 10000 + count
   }
 }

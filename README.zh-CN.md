@@ -12,6 +12,7 @@
 
 - **3D 校园地图：** 整个 Danforth 校区由 OpenStreetMap 建筑轮廓生成。有教室的楼是 WashU 红色，标签上写着教室数量。拖动平移，滚轮缩放，右键拖动旋转。
 - **楼层分解：** 选中一栋楼后会按楼层拆开。有教室的楼层是红色并显示数量，点楼层可以筛选列表。楼层由房间号推断，不会把教室放到虚构的位置。
+- **所有教学楼都有标注：** Olin、Law、Sam Fox、McKelvey 等学院的教室由学院自己排课（Bauer、Knight、Anheuser-Busch、Givens、Green 等），WashU 没有公开这些教室的清单。这些楼在地图上有标注、可以点开，会列出 WashU 公开页面上出现过的少数房间，并明确说明清单不完整。
 - **教室详情：** 容量、座位形式、黑板、投影幕、麦克风、遮光效果、无障碍、设备清单、照片、座位图；CTL 提供 360° 全景的教室会有入口。
 - **座位视角：** 在教室示意图里点任意座位，从那个位置看黑板，同时显示距离、偏离正中的角度，以及一张不同字号的幻灯片。示意图根据座位数和座位形式生成，不是真实教室；真实环境请看照片和 360° 全景。
 - **找教室：** 按最少座位数、座位形式、无障碍、360° 全景和设备筛选。地图会把没有匹配教室的楼变淡，其余的楼显示匹配数量。
@@ -61,6 +62,10 @@ npm run data:courses -- "2027 Spring"   # 生成 courses-2027S.json
 
 新增学期：对该学期运行 `data:courses`，再把它加进 `src/App.tsx` 的 `TERMS`。
 
+### 补充学院自管的教室
+
+学院自己管理的教室手工维护在 [`data/extra-rooms.json`](data/extra-rooms.json)。添加一条记录：楼在 OpenStreetMap 里的名字、房间号、所属学院，以及一个提到该房间的公开页面，然后运行 `npm run data:build`。来源没给座位数和座位形式就不要填。欢迎提 Pull Request。
+
 ## 项目结构
 
 | 路径 | 用途 |
@@ -76,7 +81,7 @@ npm run data:courses -- "2027 Spring"   # 生成 courses-2027S.json
 
 ## 数据与准确性
 
-- **教室：** [CTL Classroom Directory](https://ctl.wustl.edu/classrooms/)，31 栋楼共 129 间教室。照片、座位图、360° 全景都链接自 ctl.wustl.edu，版权归 WashU。
+- **教室：** [CTL Classroom Directory](https://ctl.wustl.edu/classrooms/)，31 栋楼共 129 间教室。它只包含教务处统一排课的公共教室，不含学院自管的教室；后者有少量从 `data/extra-rooms.json` 补充，每条都带来源。照片、座位图、360° 全景都链接自 ctl.wustl.edu，版权归 WashU。
 - **课程：** 教务处公开的 Class Schedule Search。官方说明每 48 小时刷新一次，不保证实时准确；这里是各文件所标日期的快照。
 - **地图：** © [OpenStreetMap](https://www.openstreetmap.org/copyright) 贡献者，ODbL。
 - **楼层和高度：** 楼层由房间号推断（`L006`、`G052` 和小于 100 的号码算地下层，`301` 算 3 楼）。建筑高度优先用 OpenStreetMap 的标注，没有则估算。楼层分解只用于展示，不是实测。

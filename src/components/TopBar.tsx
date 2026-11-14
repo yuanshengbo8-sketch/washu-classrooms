@@ -108,7 +108,7 @@ export function TopBar (props: TopBarProps) {
                   <button key={building.id} type='button' className='search__item' onClick={() => pick(() => props.onBuilding(building.id))}>
                     <span className='search__item-icon'><Icon name='building' size={16} /></span>
                     <span className='search__item-main'>{building.name}</span>
-                    <span className='search__item-side'>{building.rooms} {building.rooms === 1 ? t('room') : t('rooms')}</span>
+                    <span className='search__item-side'>{building.rooms > 0 ? `${building.rooms} ${building.rooms === 1 ? t('room') : t('rooms')}` : building.managedBy ?? ''}</span>
                   </button>
                 ))}
               </div>

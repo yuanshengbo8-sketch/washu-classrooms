@@ -27,7 +27,10 @@ export interface Room {
   photos: string[]
   seatMaps: SeatMap[]
   tour: string | null
+  /** The CTL page, or for a school-managed room the public page that names it. */
   url: string
+  /** Set when a school, not the Registrar, schedules the room. Such rooms have no CTL details. */
+  managedBy?: string
 }
 
 export interface ClassroomData {
@@ -56,6 +59,12 @@ export interface Building {
   ll: Point
   rooms: number
   seats: number
+  /** The school that schedules this building's classrooms itself. */
+  managedBy?: string
+  /** Housing, garages and outbuildings: drawn but not labelled or selectable. */
+  minor?: boolean
+  /** Footprint in square metres. */
+  area: number
   parts: BuildingPart[]
 }
 

@@ -1,0 +1,37 @@
+{
+  "note": "Classrooms run by a school rather than the Registrar, so they are missing from the CTL Classroom Directory. Add a room only with a public source that names it. Leave capacity and style out when the source does not give them.",
+  "rooms": [
+    {
+      "building": "Bauer Hall",
+      "room": "130",
+      "managedBy": "Olin Business School",
+      "source": "https://happenings.washu.edu/bauer_hall_634"
+    },
+    {
+      "building": "Bauer Hall",
+      "room": "160",
+      "managedBy": "Olin Business School",
+      "source": "https://happenings.washu.edu/bauer_hall_634"
+    },
+    {
+      "building": "Knight Hall",
+      "room": "110",
+      "name": "Emerson Auditorium",
+      "style": "Auditorium",
+      "managedBy": "Olin Business School",
+      "source": "https://happenings.washu.edu/emerson_auditorium_581"
+    },
+    {
+      "building": "Whitaker Hall",
+      "room": "100",
+      "managedBy": "McKelvey School of Engineering",
+      "source": "https://eventmanagement.washu.edu/explore-campus-spaces/"
+    },
+    {
+      "building": "Brauer Hall",
+      "room": "12",
+      "managedBy": "McKelvey School of Engineering",
+      "source": "https://eventmanagement.washu.edu/explore-campus-spaces/"
+    }
+  ]
+}

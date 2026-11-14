@@ -162,6 +162,38 @@ for (const name of (await readdir(ctlDir)).filter(name => name.endsWith('.html')
   if (room) classrooms.push(room)
   else console.warn(`could not parse ${name}`)
 }
+// Rooms a school runs itself are not in the CTL directory. data/extra-rooms.json
+// lists the ones a public page names; they carry no photos or equipment.
+const extra = JSON.parse(await readFile(join(ROOT, 'data', 'extra-rooms.json'), 'utf8'))
+let extraCount = 0
+for (const item of extra.rooms) {
+  const building = slugify(item.building)
+  if (classrooms.some(room => room.building === building && room.room === item.room)) continue
+  extraCount++
+  classrooms.push({
+    id: `${building}-${slugify(item.room)}`,
+    building,
+    buildingName: item.building,
+    room: item.room,
+    note: item.name ?? '',
+    floor: floorOf(item.room),
+    capacity: item.capacity ?? null,
+    style: item.style ?? '',
+    boardType: '',
+    boards: null,
+    screens: null,
+    wirelessMics: null,
+    micFor: '',
+    darkening: '',
+    accessible: false,
+    equipment: [],
+    photos: [],
+    seatMaps: [],
+    tour: null,
+    url: item.source,
+    managedBy: item.managedBy
+  })
+}
 classrooms.sort((a, b) => a.buildingName.localeCompare(b.buildingName) || a.room.localeCompare(b.room, 'en', { numeric: true }))
 
 // ---- campus ----------------------------------------------------------------
@@ -215,6 +247,25 @@ function centroid (points) {
 
 /** Buildings near but not part of the university, kept as plain context. */
 const NOT_CAMPUS = /church|ministry|vedanta|adventist|wydown|historical society|st\. michael|copy center|scientist|hillel|chabad|catholic/i
+
+/** Buildings whose classrooms the school schedules itself. */
+const MANAGED_BY = {
+  'Bauer Hall': 'Olin Business School',
+  'Knight Hall': 'Olin Business School',
+  'Charles F. Knight Center': 'Olin Business School',
+  'Anheuser-Busch Hall': 'School of Law',
+  'Goldfarb Hall': 'Brown School',
+  'Givens Hall': 'Sam Fox School of Design & Visual Arts',
+  'Bixby Hall': 'Sam Fox School of Design & Visual Arts',
+  'Earl E. and Myrtle E. Walker Hall': 'Sam Fox School of Design & Visual Arts',
+  'Brauer Hall': 'McKelvey School of Engineering',
+  'Green Hall': 'McKelvey School of Engineering',
+  'McKelvey Hall': 'McKelvey School of Engineering',
+  'Urbauer Hall': 'McKelvey School of Engineering'
+}
+
+/** Housing, garages and outbuildings: drawn, but not labelled on the map. */
+const MINOR = /House$|Apartment|Garage|Parking|Tool Shed|^Alpha |^Kappa |^Sigma |^Theta |Village East|Millbrook|Facility$|Pavillion$|Tech Den|^East Building$|^Science Building$|^Academy Building$|Rand Center|Taylor Library/
 
 const roomsByBuilding = new Map()
 for (const room of classrooms) {
@@ -285,6 +336,9 @@ for (const building of named.values()) {
     ll: [Number((LAT0 + cy / M_PER_LAT).toFixed(6)), Number((LON0 + cx / M_PER_LON).toFixed(6))],
     rooms: rooms.length,
     seats: rooms.reduce((sum, room) => sum + (room.capacity ?? 0), 0),
+    ...(MANAGED_BY[building.name] ? { managedBy: MANAGED_BY[building.name] } : {}),
+    ...(rooms.length === 0 && MINOR.test(building.name) ? { minor: true } : {}),
+    area: Math.round(footprint),
     parts: building.parts.map(part => (part.holes.length ? { poly: part.poly, holes: part.holes } : { poly: part.poly }))
   })
 }
@@ -349,7 +403,8 @@ await writeFile(
 )
 await writeFile(join(OUT, 'campus.json'), JSON.stringify(campus))
 
-console.log(`${classrooms.length} classrooms in ${roomsByBuilding.size} buildings`)
+console.log(`${classrooms.length} classrooms in ${roomsByBuilding.size} buildings (${extraCount} school-managed)`)
+console.log('labelled without rooms:', buildings.filter(b => b.rooms === 0 && !b.minor).map(b => b.name).join(' | '))
 console.log(`${buildings.length} named buildings, ${context.length} context buildings, ${paths.length} paths, ${areas.length} areas`)
 console.log('styles:', Object.fromEntries([...styles].sort((a, b) => b[1] - a[1])))
 console.log('equipment:', Object.fromEntries([...equipment].sort((a, b) => b[1] - a[1])))
