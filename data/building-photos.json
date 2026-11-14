@@ -1,0 +1,110 @@
+{
+ "note": "Exterior photos from Wikimedia Commons, each checked by eye against the building. scripts/fetch-building-photos.mjs lists candidates; add a building here only after looking at the photo. Images are loaded from upload.wikimedia.org, not copied.",
+ "photos": {
+  "anheuser-busch-hall": {
+   "file": "Anheuser Busch Hall.jpg",
+   "src": "https://thumb.wikimedia.org/wikipedia/commons/thumb/0/07/Anheuser_Busch_Hall.jpg/960px-Anheuser_Busch_Hall.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+   "page": "https://commons.wikimedia.org/wiki/File:Anheuser_Busch_Hall.jpg",
+   "by": "Doc2129",
+   "license": "CC BY-SA 4.0"
+  },
+  "blewett-hall": {
+   "file": "Blewett Hall (Department of Music) - Danforth Campus of Washington University in St. Louis.jpg",
+   "src": "https://thumb.wikimedia.org/wikipedia/commons/thumb/0/0b/Blewett_Hall_%28Department_of_Music%29_-_Danforth_Campus_of_Washington_University_in_St._Louis.jpg/960px-Blewett_Hall_%28Department_of_Music%29_-_Danforth_Campus_of_Washington_University_in_St._Louis.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+   "page": "https://commons.wikimedia.org/wiki/File:Blewett_Hall_(Department_of_Music)_-_Danforth_Campus_of_Washington_University_in_St._Louis.jpg",
+   "by": "Baili Min",
+   "license": "CC BY 2.5"
+  },
+  "brauer-hall": {
+   "file": "Brauer Hall.jpg",
+   "src": "https://upload.wikimedia.org/wikipedia/commons/4/45/Brauer_Hall.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail_unscaled",
+   "page": "https://commons.wikimedia.org/wiki/File:Brauer_Hall.jpg",
+   "by": "Randy Johnston",
+   "license": "CC BY 3.0"
+  },
+  "brookings-hall": {
+   "file": "Brookings.jpg",
+   "src": "https://thumb.wikimedia.org/wikipedia/commons/thumb/9/92/Brookings.jpg/960px-Brookings.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+   "page": "https://commons.wikimedia.org/wiki/File:Brookings.jpg",
+   "by": "unknown author",
+   "license": "Public domain"
+  },
+  "brown-hall": {
+   "file": "Brown Hall.jpg",
+   "src": "https://thumb.wikimedia.org/wikipedia/commons/thumb/c/c0/Brown_Hall.jpg/960px-Brown_Hall.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+   "page": "https://commons.wikimedia.org/wiki/File:Brown_Hall.jpg",
+   "by": "Minbaili",
+   "license": "CC BY-SA 2.5"
+  },
+  "bryan-hall": {
+   "file": "WashU Bryan Hall.jpg",
+   "src": "https://thumb.wikimedia.org/wikipedia/commons/thumb/e/e1/WashU_Bryan_Hall.jpg/960px-WashU_Bryan_Hall.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+   "page": "https://commons.wikimedia.org/wiki/File:WashU_Bryan_Hall.jpg",
+   "by": "Doc2129",
+   "license": "CC BY-SA 4.0"
+  },
+  "crow-hall": {
+   "file": "Crow Observatory Dome.jpg",
+   "src": "https://thumb.wikimedia.org/wikipedia/commons/thumb/a/a7/Crow_Observatory_Dome.jpg/960px-Crow_Observatory_Dome.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+   "page": "https://commons.wikimedia.org/wiki/File:Crow_Observatory_Dome.jpg",
+   "by": "Lmbstl",
+   "license": "Public domain"
+  },
+  "danforth-university-center": {
+   "file": "Danforth University Center.JPG",
+   "src": "https://thumb.wikimedia.org/wikipedia/commons/thumb/8/85/Danforth_University_Center.JPG/960px-Danforth_University_Center.JPG?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+   "page": "https://commons.wikimedia.org/wiki/File:Danforth_University_Center.JPG",
+   "by": "Shubinator",
+   "license": "CC BY-SA 3.0"
+  },
+  "graham-chapel": {
+   "file": "WashU Graham Chapel.JPG",
+   "src": "https://thumb.wikimedia.org/wikipedia/commons/thumb/f/ff/WashU_Graham_Chapel.JPG/960px-WashU_Graham_Chapel.JPG?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+   "page": "https://commons.wikimedia.org/wiki/File:WashU_Graham_Chapel.JPG",
+   "by": "Matt K - Kitz000",
+   "license": "CC BY 3.0"
+  },
+  "green-hall": {
+   "file": "WashU Green Hall.jpg",
+   "src": "https://thumb.wikimedia.org/wikipedia/commons/thumb/9/9b/WashU_Green_Hall.jpg/960px-WashU_Green_Hall.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+   "page": "https://commons.wikimedia.org/wiki/File:WashU_Green_Hall.jpg",
+   "by": "Doc2129",
+   "license": "CC BY-SA 4.0"
+  },
+  "holmes-lounge": {
+   "file": "Holmes Lounge.jpg",
+   "src": "https://thumb.wikimedia.org/wikipedia/commons/thumb/d/d5/Holmes_Lounge.jpg/960px-Holmes_Lounge.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+   "page": "https://commons.wikimedia.org/wiki/File:Holmes_Lounge.jpg",
+   "by": "Minbaili",
+   "license": "CC BY-SA 2.5"
+  },
+  "mcmillan-hall": {
+   "file": "WashU McMillan Hall.jpg",
+   "src": "https://thumb.wikimedia.org/wikipedia/commons/thumb/4/45/WashU_McMillan_Hall.jpg/960px-WashU_McMillan_Hall.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+   "page": "https://commons.wikimedia.org/wiki/File:WashU_McMillan_Hall.jpg",
+   "by": "Doc2129",
+   "license": "CC BY-SA 4.0"
+  },
+  "mildred-lane-kemper-art-museum": {
+   "file": "Kemper Art Museum at Wash U.jpg",
+   "src": "https://thumb.wikimedia.org/wikipedia/commons/thumb/a/a1/Kemper_Art_Museum_at_Wash_U.jpg/960px-Kemper_Art_Museum_at_Wash_U.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+   "page": "https://commons.wikimedia.org/wiki/File:Kemper_Art_Museum_at_Wash_U.jpg",
+   "by": "Shubinator",
+   "license": "CC BY-SA 3.0"
+  },
+  "seigle-hall": {
+   "file": "SeigleHall.jpg",
+   "src": "https://thumb.wikimedia.org/wikipedia/commons/thumb/9/9e/SeigleHall.jpg/960px-SeigleHall.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+   "page": "https://commons.wikimedia.org/wiki/File:SeigleHall.jpg",
+   "by": "Kitz000 - Matt Kitces",
+   "license": "CC BY-SA 3.0"
+  },
+  "steinberg-hall": {
+   "file": "Steinberg Hall.jpg",
+   "src": "https://thumb.wikimedia.org/wikipedia/commons/thumb/7/75/Steinberg_Hall.jpg/960px-Steinberg_Hall.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+   "page": "https://commons.wikimedia.org/wiki/File:Steinberg_Hall.jpg",
+   "by": "LittleT889",
+   "license": "CC BY-SA 4.0"
+  }
+ }
+}

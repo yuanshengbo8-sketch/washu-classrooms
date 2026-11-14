@@ -97,6 +97,7 @@ npm run data:courses -- "2027 Spring"   # 生成 courses-2027S.json
 - **其他教室：** WashU 旧版公开课表（courses.wustl.edu 与 acadinfo.wustl.edu/CourseListings，2025 年停用），取自 [Internet Archive](https://web.archive.org/) 的存档。存档里至少有两个班次在某房间上课，才会收录这间房。这些房间显示的座位数是在那里排过的最大班级名额，是下限而不是实际容量。`data/listing-rooms.json` 是汇总后的清单；`data/extra-rooms.json` 是少量手工补充的房间。
 - **自习室：** [WashU 图书馆自习室目录](https://library.washu.edu/study-rooms/) 和图书馆公开的 [LibCal](https://wustl.libcal.com/allspaces) 预约页。预约情况是最多滞后 20 分钟的副本，以 LibCal 为准，预约也在 LibCal 完成。Olin Library 的平面图是图书馆自己的图片，从 library.washu.edu 加载（太慢时改用 Internet Archive 的副本）；`data/study-room-spots.json` 记录每间房的标签在图上的位置，是人工对照图读出来的。
 - **课程：** 教务处公开的 Class Schedule Search。官方说明每 48 小时刷新一次，不保证实时准确；这里是各文件所标日期的快照。
+- **建筑照片：** 15 栋楼的外观照片来自 [Wikimedia Commons](https://commons.wikimedia.org/)，按各自标注的许可使用，从 Commons 直接加载、不做拷贝。清单在 `data/building-photos.json`，每张都人工核对过。每栋楼另有 Google 街景链接。
 - **地图：** © [OpenStreetMap](https://www.openstreetmap.org/copyright) 贡献者，ODbL。校内的树是 OpenStreetMap 上已测绘的；周边街区的树、屋顶形状和窗户是为了好看而生成的。
 - **楼层和高度：** 楼层由房间号推断（`L006`、`G052` 和小于 100 的号码算底层，`301` 算 3 楼；工学院几栋楼的四位房间号以楼层开头，`2101` 算 2 楼）。建筑高度优先用 OpenStreetMap 的标注，没有则估算。楼层分解只用于展示，不是实测。
 

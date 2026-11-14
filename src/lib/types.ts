@@ -78,6 +78,8 @@ export interface Building {
   minor?: boolean
   /** Footprint in square metres. */
   area: number
+  /** A freely licensed exterior photo from Wikimedia Commons, with its credit. */
+  photo?: { src: string; page: string; by: string; license: string }
   /** Roof form, for drawing. */
   roof?: 'flat' | 'pitched'
   parts: BuildingPart[]

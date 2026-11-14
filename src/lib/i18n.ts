@@ -143,6 +143,8 @@ const STRINGS = {
     zh: '申请教室同样在 reserve.wustl.edu。Olin 的说明里写：学生申请在每学期第 15 天开放（学校释放公共教室的时间），收到确认邮件才算订上。'
   },
   studyClassroomsLink: { en: 'Olin’s guide to requesting a room', zh: 'Olin 的教室申请说明' },
+  streetView: { en: 'Street View', zh: '看街景' },
+  photoCredit: { en: 'Photo: {by}, {license}, Wikimedia Commons', zh: '照片：{by}，{license}，Wikimedia Commons' },
   floorPlan: { en: 'Floor plan', zh: '楼层平面图' },
   planCredit: { en: 'Floor plan: WashU Libraries', zh: '平面图来自 WashU 图书馆' },
   planFailed: { en: 'The floor plan image did not load.', zh: '平面图没有加载出来。' },

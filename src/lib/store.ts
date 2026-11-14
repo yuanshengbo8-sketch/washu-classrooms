@@ -45,3 +45,8 @@ export function shareUrl (state: UrlState): string {
 export function directionsUrl (lat: number, lon: number): string {
   return `https://www.google.com/maps/dir/?api=1&destination=${lat},${lon}&travelmode=walking`
 }
+
+/** Google Street View at the nearest panorama to a point. */
+export function streetViewUrl (lat: number, lng: number): string {
+  return `https://www.google.com/maps/@?api=1&map_action=pano&viewpoint=${lat},${lng}`
+}

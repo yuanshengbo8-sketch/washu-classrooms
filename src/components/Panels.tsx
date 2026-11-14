@@ -3,7 +3,7 @@ import type { Building, Filters, Room } from '../lib/types'
 import { NO_FILTERS, filtersActive, floorLabel, matchesFilters, roomSize } from '../lib/types'
 import type { Lang, StringKey } from '../lib/i18n'
 import { term } from '../lib/i18n'
-import { directionsUrl, shareUrl } from '../lib/store'
+import { directionsUrl, shareUrl, streetViewUrl } from '../lib/store'
 import { Icon } from './Icon'
 import { schoolName, schoolOf, schoolStyle } from '../lib/schools'
 import type { Availability, FloorPlans, StudyRoom } from '../lib/study'
@@ -242,9 +242,20 @@ export function BuildingPanel ({ building, rooms, studyRooms, availability, plan
         <button type='button' className='icon-button icon-button--light' onClick={onClose} aria-label={t('close')}><Icon name='close' /></button>
       </header>
       <div className='panel__scroll'>
+        {building.photo ? (
+          <figure className='building-photo'>
+            <img src={building.photo.src} alt={building.name} loading='lazy' />
+            <figcaption>
+              <a href={building.photo.page} target='_blank' rel='noreferrer'>{t('photoCredit', { by: building.photo.by, license: building.photo.license })}</a>
+            </figcaption>
+          </figure>
+        ) : null}
         <div className='panel__actions'>
           <a className='button button--ghost' href={directionsUrl(building.ll[0], building.ll[1])} target='_blank' rel='noreferrer'>
             <Icon name='walk' size={16} />{t('directions')}
+          </a>
+          <a className='button button--ghost' href={streetViewUrl(building.ll[0], building.ll[1])} target='_blank' rel='noreferrer'>
+            <Icon name='pano' size={16} />{t('streetView')}
           </a>
         </div>
         {building.managedBy || (building.rooms === 0 && studyRooms.length === 0) || rooms.some(room => room.source === 'listings') ? (

@@ -729,3 +729,10 @@ h2, h3, p { margin: 0; }
 .plan__dot:first-child { margin-left: 0; }
 .plan__dot--free { background: #2f8f46; }
 .plan__dot--busy { background: var(--red); }
+
+/* ---- building photo ------------------------------------------------------ */
+.building-photo { margin: 0 0 12px; }
+.building-photo img { display: block; width: 100%; aspect-ratio: 3 / 2; object-fit: cover; border-radius: 12px; background: var(--cream); }
+.building-photo figcaption { margin-top: 4px; font-size: 11.5px; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.building-photo a { color: inherit; }
+.panel__actions { display: flex; flex-wrap: wrap; gap: 8px; }

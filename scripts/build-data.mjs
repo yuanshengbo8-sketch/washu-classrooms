@@ -546,6 +546,18 @@ for (const [name, list] of namedRoads) {
 const FLAT_ROOF = /Olin Library|Mallinckrodt|Athletic|Field House|Recreation|Kemper|Steinberg|Weil|Givens|Bixby|Walker|Schnuck|Jubel|McKelvey|Garage|Parking|Bryan|Compton|Lopata Hall|Jolley|Urbauer|Laboratory|Radiochemistry|Life Sciences|Monsanto|McMillen|Millbrook|Facility|Welcome Center|Knight Center|Village East|Music Classroom|Gaylord/
 for (const building of buildings) building.roof = FLAT_ROOF.test(building.name) ? 'flat' : 'pitched'
 
+// Exterior photos, picked by hand from Wikimedia Commons (scripts/fetch-building-photos.mjs lists candidates).
+try {
+  const picked = JSON.parse(await readFile(join(ROOT, 'data', 'building-photos.json'), 'utf8')).photos
+  for (const building of buildings) {
+    const photo = picked[building.id]
+    if (photo) building.photo = { src: photo.src, page: photo.page, by: photo.by, license: photo.license }
+  }
+  console.log(`${buildings.filter(building => building.photo).length} buildings have an exterior photo`)
+} catch {
+  console.warn('data/building-photos.json not found: buildings will have no photos')
+}
+
 // OpenStreetMap has the campus trees but almost none in the neighbourhoods
 // around it. Fill those in so the surroundings do not look bare: street trees
 // along residential roads and one or two yard trees per house. These are
