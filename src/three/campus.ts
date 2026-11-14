@@ -1161,7 +1161,7 @@ export class CampusScene {
     const { building } = entry
     const hover = building.id === this.hoveredId ? 100000 : 0
     if (this.isPlain(building)) return hover + (building.managedBy ? 5000 : Math.min(building.area / 10, 4000))
-    if (building.rooms === 0 && this.matchMode === 'rooms') return hover + 9000 + (this.study.get(building.id) ?? 0)
+    if (building.rooms === 0 && this.matchMode === 'rooms') return hover + 10000 + (this.study.get(building.id) ?? 0)
     const count = this.matches ? this.matches.get(building.id) ?? 0 : building.rooms
     return hover + 10000 + count
   }
