@@ -145,6 +145,8 @@ function parseClassroom (html, slug) {
     accessible: /yes/i.test(details['Wheelchair Accessible'] ?? ''),
     equipment,
     photos,
+    // CTL's uploads come in several sizes; the small one is enough for a list.
+    ...(photos[0]?.includes('-800x533') ? { thumb: photos[0].replace('-800x533', '-300x200') } : {}),
     seatMaps,
     tour,
     url: `https://ctl.wustl.edu/classrooms/${slug}/`

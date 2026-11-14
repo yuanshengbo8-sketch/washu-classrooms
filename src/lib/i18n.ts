@@ -132,6 +132,7 @@ const GENERIC = {
   sourceCode: { en: 'Source code on GitHub', zh: 'GitHub 源代码' },
   dataAsOf: { en: 'Classroom data fetched {d}', zh: '教室数据抓取于 {d}' },
   photoOf: { en: 'Photo {a} of {b}', zh: '照片 {a} / {b}' },
+  photoCount: { en: '{n} photos', zh: '{n} 张照片' },
   days: { en: 'Mon,Tue,Wed,Thu,Fri,Sat,Sun', zh: '周一,周二,周三,周四,周五,周六,周日' }
 } as const
 

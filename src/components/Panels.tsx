@@ -42,8 +42,8 @@ export function RoomCard ({ room, lang, t, showBuilding, favorite, onOpen, onHov
       onPointerLeave={() => onHover?.(null)}
     >
       <span className='room-card__thumb'>
-        {room.photos[0] ? (
-          <img src={room.photos[0].replace('-800x533', '-300x200')} alt='' loading='lazy' referrerPolicy='no-referrer' />
+        {room.thumb ? (
+          <img src={room.thumb} alt='' loading='lazy' referrerPolicy='no-referrer' />
         ) : (
           <span className='room-card__placeholder'><Icon name='seat' size={22} /></span>
         )}
@@ -65,6 +65,7 @@ export function RoomCard ({ room, lang, t, showBuilding, favorite, onOpen, onHov
           ) : null}
           {room.accessible ? <span className='tag' title={t('accessible')}><Icon name='wheelchair' size={13} /></span> : null}
           {room.tour ? <span className='tag' title={t('hasTour')}>360°</span> : null}
+          {!room.thumb && room.photos.length > 0 ? <span className='tag'>{t('photoCount', { n: room.photos.length })}</span> : null}
         </span>
       </span>
     </button>

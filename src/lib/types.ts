@@ -25,6 +25,8 @@ export interface Room {
   accessible: boolean
   equipment: string[]
   photos: string[]
+  /** A small copy of the first photo for lists, where the source offers one. */
+  thumb?: string
   seatMaps: SeatMap[]
   tour: string | null
   /** The CTL page, or for a school-managed room the public page that names it. */
