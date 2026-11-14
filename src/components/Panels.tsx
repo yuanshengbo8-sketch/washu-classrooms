@@ -5,6 +5,7 @@ import type { Lang, StringKey } from '../lib/i18n'
 import { term } from '../lib/i18n'
 import { directionsUrl, shareUrl } from '../lib/store'
 import { Icon } from './Icon'
+import { schoolName, schoolOf, schoolStyle } from '../lib/schools'
 import type { Availability, FloorPlans, StudyRoom } from '../lib/study'
 import { LibraryPlans, StudyCard } from './StudyPanel'
 import { REPO_URL } from './Modals'
@@ -221,8 +222,12 @@ export function BuildingPanel ({ building, rooms, studyRooms, availability, plan
 
   return (
     <section className='panel' aria-label={building.name}>
-      <header className='panel__header panel__header--building'>
+      <header
+        className='panel__header panel__header--building'
+        style={schoolStyle(building.id)}
+      >
         <div>
+          <p className='panel__school'>{schoolName(schoolOf(building.id), lang)}</p>
           <h2 className='panel__title panel__title--serif'>{building.name}</h2>
           <p className='panel__subtitle'>
             {building.rooms === 0

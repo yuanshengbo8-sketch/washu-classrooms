@@ -3,6 +3,7 @@ import { MapControls } from 'three/addons/controls/MapControls.js'
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js'
 import type { Building, BuildingPart, Campus, Point } from '../lib/types'
 import { floorLabel } from '../lib/types'
+import { SCHOOLS, schoolOf } from '../lib/schools'
 
 const COLORS = {
   sky: 0xe9eee6,
@@ -660,6 +661,10 @@ export class CampusScene {
         label = document.createElement('button')
         label.type = 'button'
         label.className = hasRooms ? 'map-label' : 'map-label map-label--plain'
+        // The label takes its school's colour; see lib/schools.ts.
+        const school = SCHOOLS[schoolOf(building.id)]
+        label.style.setProperty('--school', school.color)
+        label.style.setProperty('--school-dark', school.dark)
         const name = document.createElement('span')
         name.className = 'map-label__name'
         name.textContent = shortName(building.name)

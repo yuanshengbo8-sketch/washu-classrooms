@@ -10,6 +10,7 @@ import { TopBar } from './components/TopBar'
 import { BuildingPanel, FinderPanel, RoomDetail } from './components/Panels'
 import { AboutModal, CourseModal } from './components/Modals'
 import { StudyPanel } from './components/StudyPanel'
+import { LEGEND_TITLE, SCHOOLS, SCHOOL_ORDER } from './lib/schools'
 
 const CampusMap = lazy(() => import('./components/CampusMap'))
 const SeatView = lazy(() => import('./components/SeatView'))
@@ -51,6 +52,8 @@ export function App () {
   const [availability, setAvailability] = useState<Availability | null>(null)
   const [, setTick] = useState(0)
 
+  // The colour key starts open where there is room for it.
+  const [legendOpen, setLegendOpen] = useState(() => window.innerWidth > 780)
   const [seatRoom, setSeatRoom] = useState<Room | null>(null)
   const [aboutOpen, setAboutOpen] = useState(false)
   const [termId, setTermId] = useState(TERMS[0].id)
@@ -331,6 +334,18 @@ export function App () {
           }}
           onAbout={() => setAboutOpen(true)}
         />
+        {mapFailed ? null : (
+          <div className='legend'>
+            <button type='button' className='legend__toggle' onClick={() => setLegendOpen(!legendOpen)} aria-expanded={legendOpen}>
+              {LEGEND_TITLE[lang]} {legendOpen ? '−' : '+'}
+            </button>
+            {legendOpen ? SCHOOL_ORDER.map(id => (
+              <span key={id} className='legend__item'>
+                <span className='legend__swatch' style={{ background: SCHOOLS[id].color }} />{SCHOOLS[id][lang]}
+              </span>
+            )) : null}
+          </div>
+        )}
         <div className='map-footer'>
           <span className='map-footer__hint'>{t(matchMedia('(pointer: coarse)').matches ? 'hintMapTouch' : 'hintMap')}</span>
           <a href='https://www.openstreetmap.org/copyright' target='_blank' rel='noreferrer'>© OpenStreetMap</a>

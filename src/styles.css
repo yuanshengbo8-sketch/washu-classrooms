@@ -96,9 +96,15 @@ h2, h3, p { margin: 0; }
   will-change: transform;
   transition: opacity 0.2s, background 0.15s, border-color 0.15s;
 }
+/* A label is filled with its school's colour (--school, set per label). */
 .map-label {
-  padding: 3px 4px 3px 9px;
+  --school: #75807a;
+  --school-dark: #525c56;
+  padding: 3px 4px 3px 10px;
   border-radius: 999px;
+  border-color: rgba(255, 255, 255, 0.4);
+  background: linear-gradient(120deg, var(--school), var(--school-dark));
+  color: #fff;
   font-size: 12.5px;
   font-weight: 650;
   letter-spacing: 0.01em;
@@ -107,26 +113,54 @@ h2, h3, p { margin: 0; }
   min-width: 20px;
   padding: 0 6px;
   border-radius: 999px;
-  background: var(--red);
-  color: #fff;
+  background: rgba(255, 255, 255, 0.95);
+  color: var(--school-dark);
   font-size: 11.5px;
   line-height: 19px;
   text-align: center;
   font-variant-numeric: tabular-nums;
 }
+/* No rooms to count: a pale label with a dot in the school's colour. */
 .map-label--plain {
-  padding: 2px 9px;
+  gap: 5px;
+  padding: 2px 9px 2px 7px;
   border-color: transparent;
-  background: rgba(255, 253, 249, 0.82);
+  background: rgba(255, 253, 249, 0.86);
   box-shadow: 0 1px 4px rgba(31, 38, 35, 0.1);
   font-size: 11.5px;
   font-weight: 600;
   color: #4d5751;
 }
-.map-label--hover { border-color: var(--red); background: #fff; }
+.map-label--plain::before { content: ''; flex: none; width: 7px; height: 7px; border-radius: 50%; background: var(--school); }
+.map-label--hover { filter: brightness(1.12); box-shadow: 0 0 0 2px #fff, 0 4px 14px rgba(31, 38, 35, 0.3); }
+.map-label--plain.map-label--hover { filter: none; background: #fff; }
 .map-label--dim { opacity: 0.6; }
 .map-label--none { opacity: 0.4; }
-.map-label--none .map-label__count { background: #a9a9a2; }
+.map-label--none .map-label__count { background: rgba(255, 255, 255, 0.7); }
+
+.legend {
+  position: absolute;
+  left: 14px;
+  bottom: 32px;
+  max-width: min(560px, calc(100% - 90px));
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 6px;
+  padding: 6px 8px;
+  border-radius: 12px;
+  background: rgba(255, 253, 249, 0.92);
+  box-shadow: 0 1px 2px rgba(31, 38, 35, 0.12), 0 3px 10px rgba(31, 38, 35, 0.1);
+  font-size: 11.5px;
+  color: #4d5751;
+}
+.legend__toggle { border: 0; padding: 0 2px; background: none; font: inherit; font-weight: 650; color: var(--ink); cursor: pointer; }
+.legend__item { display: inline-flex; align-items: center; gap: 4px; white-space: nowrap; }
+.legend__swatch { width: 9px; height: 9px; border-radius: 50%; }
+@media (max-width: 780px) {
+  .legend { left: 10px; bottom: 28px; max-width: calc(100% - 70px); }
+  .app--panel .legend { display: none; }
+}
 
 .floor-label {
   padding: 3px 10px;
@@ -329,9 +363,10 @@ h2, h3, p { margin: 0; }
   justify-content: space-between;
   padding: 18px 12px 16px 18px;
   border-bottom: 4px solid var(--green);
-  background: var(--red);
+  background: linear-gradient(120deg, var(--school, var(--red)), var(--school-dark, var(--red-dark)));
   color: #fff;
 }
+.panel__school { margin-bottom: 4px; font-size: 11.5px; font-weight: 650; letter-spacing: 0.05em; text-transform: uppercase; opacity: 0.85; }
 .panel__title { font-size: 17px; font-weight: 700; }
 .panel__title--grow { flex: 1; min-width: 0; }
 .panel__title--serif { font: 700 23px/1.2 var(--serif); }
@@ -639,7 +674,7 @@ h2, h3, p { margin: 0; }
 .pill__badge--green { background: var(--green); }
 .pill--on .pill__badge--green { background: #fff; color: var(--green); }
 .pill--study.pill--on, .pill--study.pill--on:hover { background: var(--green); }
-.map-label--study .map-label__count { background: var(--green); }
+.map-label--study { --school: #2f7a43; --school-dark: #1f4f2c; }
 .map-label__count:empty { display: none; }
 .study-chips { margin: 12px 0 4px; }
 .chip:disabled { opacity: 0.45; cursor: default; }
