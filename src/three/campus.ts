@@ -43,6 +43,7 @@ const COLORS = {
   redDim: 0xd9bcb9,
   match: 0xba0c2f,
   green: 0x2c5234,
+  studyRoof: 0x4a7f57,
   leaf: [0x5f9d57, 0x6fae5f, 0x4f8f52, 0x7db968, 0x5a9a63],
   floorEmpty: 0xf6f1e8,
   floorRooms: 0xc8324f
@@ -366,6 +367,8 @@ export class CampusScene {
   private hoveredFloor: number | null = null
   private matches: Map<string, number> | null = null
   private matchMode: 'rooms' | 'study' = 'rooms'
+  /** Study rooms per building, for buildings that have any. */
+  private study = new Map<string, number>()
   private tween: Tween | null = null
   private dirty = true
   private frame = 0
@@ -745,7 +748,8 @@ export class CampusScene {
    * school runs its rooms and we know none. Slate or pale grey: everything else.
    */
   private roofColor (building: Building): number {
-    const base = building.rooms > 0 ? COLORS.red : building.managedBy ? COLORS.school : building.roof === 'flat' ? COLORS.flatRoof : COLORS.slate
+    const studyOnly = building.rooms === 0 && this.study.has(building.id) && this.matches === null
+    const base = building.rooms > 0 ? COLORS.red : studyOnly ? COLORS.studyRoof : building.managedBy ? COLORS.school : building.roof === 'flat' ? COLORS.flatRoof : COLORS.slate
     const shift = ((hash(building.id) % 9) - 4) / 100
     return new THREE.Color(base).offsetHSL(0, 0, shift * 0.8).getHex()
   }
@@ -781,6 +785,12 @@ export class CampusScene {
     this.dirty = true
   }
 
+  /** Buildings with study rooms get a green roof and a count, even without classrooms. */
+  setStudyBuildings (counts: Map<string, number>): void {
+    this.study = counts
+    this.setMatches(this.matches, this.matchMode)
+  }
+
   /**
    * Counts per building to show instead of the classroom totals, or null for
    * none: matching classrooms under a filter ('rooms'), or study rooms ('study').
@@ -790,12 +800,12 @@ export class CampusScene {
     this.matchMode = matches ? mode : 'rooms'
     for (const entry of this.entries.values()) {
       if (!entry.label) continue
-      const count = matches ? matches.get(entry.building.id) ?? 0 : entry.building.rooms
+      const count = matches ? matches.get(entry.building.id) ?? 0 : entry.building.rooms || (this.study.get(entry.building.id) ?? 0)
       const plain = this.isPlain(entry.building)
       const badge = entry.label.querySelector('.map-label__count')
       if (badge) badge.textContent = plain ? '' : String(count)
       entry.label.classList.toggle('map-label--plain', plain)
-      entry.label.classList.toggle('map-label--study', this.matchMode === 'study' && !plain)
+      entry.label.classList.toggle('map-label--study', !plain && (this.matchMode === 'study' || entry.building.rooms === 0))
       entry.labelSize = [0, 0]
     }
     this.applyColors()
@@ -947,7 +957,9 @@ export class CampusScene {
   /** A building with nothing to count in the current mode gets a small grey label. */
   private isPlain (building: Building): boolean {
     if (this.matchMode === 'study') return (this.matches?.get(building.id) ?? 0) === 0
-    return building.rooms === 0
+    // Under a classroom filter only classroom buildings count.
+    if (this.matches !== null) return building.rooms === 0
+    return building.rooms === 0 && !this.study.has(building.id)
   }
 
   private applyColors (): void {
@@ -1149,6 +1161,7 @@ export class CampusScene {
     const { building } = entry
     const hover = building.id === this.hoveredId ? 100000 : 0
     if (this.isPlain(building)) return hover + (building.managedBy ? 5000 : Math.min(building.area / 10, 4000))
+    if (building.rooms === 0 && this.matchMode === 'rooms') return hover + 9000 + (this.study.get(building.id) ?? 0)
     const count = this.matches ? this.matches.get(building.id) ?? 0 : building.rooms
     return hover + 10000 + count
   }

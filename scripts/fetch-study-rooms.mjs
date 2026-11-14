@@ -83,6 +83,9 @@ for (let page = 1; page <= 5; page++) {
   await sleep(3000)
 }
 
+// Hand-read positions of the rooms on the Libraries' published floor plans.
+const placed = JSON.parse(await readFile(join(root, 'data', 'study-room-spots.json'), 'utf8'))
+
 const out = []
 for (const item of directory) {
   const classes = item.class_list ?? []
@@ -101,6 +104,8 @@ for (const item of directory) {
   )?.[1]
   const seats = text.match(/\/(\d+) seats/)?.[1] ?? (seatWord ? WORDS[seatWord.toLowerCase()] ?? Number(seatWord) : null)
   // Match the directory entry to its LibCal page by room number or name.
+  const spot = placed.spots[item.slug]
+  const plan = placed.plans[location.library]
   const booking = rooms.find(room =>
     (number && new RegExp(`\\b(RM |Room )?${number}\\b`).test(room.title) && location.library === 'Olin Library') ||
     (/Newman Exploration/i.test(name) && /Newman/i.test(room.title)) ||
@@ -113,7 +118,10 @@ for (const item of directory) {
     building: slugify(location.building),
     buildingName: location.building,
     room: number,
-    level,
+    level: spot?.level ?? level,
+    // Position on that level's plan image, as fractions of its width and height.
+    ...(spot && plan ? { spot: [Math.round((spot.at[0] / plan.size[0]) * 1000) / 1000, Math.round((spot.at[1] / plan.size[1]) * 1000) / 1000] } : {}),
+    ...(spot?.area ? { spotArea: spot.area } : {}),
     seats: booking?.capacity || (seats ? Number(seats) : null),
     reservable: features.includes('reservable'),
     features: features.filter(feature => feature !== 'reservable'),
@@ -131,6 +139,7 @@ await writeFile(
     source: 'https://library.washu.edu/study-rooms/',
     booking: 'https://wustl.libcal.com/allspaces',
     fetched: new Date().toISOString().slice(0, 10),
+    plans: Object.fromEntries(Object.entries(placed.plans).map(([library, plan]) => [library, { page: plan.page, order: plan.order, levels: plan.levels }])),
     rooms: out
   })
 )

@@ -1,6 +1,6 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import type { Lang, StringKey } from '../lib/i18n'
-import type { Availability, StudyRoom, StudyStatus } from '../lib/study'
+import type { Availability, FloorPlans, StudyRoom, StudyStatus } from '../lib/study'
 import { campusNow, clock, gridFor, isFresh, statusOf } from '../lib/study'
 import { Icon } from './Icon'
 
@@ -55,9 +55,114 @@ function DayStrip ({ room, availability, date, label, nowMinutes }: { room: Stud
   )
 }
 
+export interface PlanPin {
+  id: string
+  name: string
+  spot: [number, number]
+  kind: StudyStatus['kind']
+  active: boolean
+}
+
+interface FloorPlanProps {
+  /** The plan image on library.washu.edu. */
+  src: string
+  /** The page the plan comes from, linked if the image cannot load. */
+  page: string
+  pins: PlanPin[]
+  t: T
+  onPick?: (id: string) => void
+}
+
+/**
+ * A published floor plan with the study rooms marked on it. The image stays
+ * on the library's site; if that fails, the Internet Archive's copy is tried.
+ */
+export function FloorPlan ({ src, page, pins, t, onPick }: FloorPlanProps) {
+  const [attempt, setAttempt] = useState({ src, step: 0 })
+  if (attempt.src !== src) setAttempt({ src, step: 0 })
+  const step = attempt.src === src ? attempt.step : 0
+  const [loaded, setLoaded] = useState('')
+  const url = step === 0 ? src : `https://web.archive.org/web/2025im_/${src}`
+  // The library's server is sometimes very slow: after four seconds, try the archived copy.
+  useEffect(() => {
+    if (step !== 0 || loaded === url) return
+    const timer = window.setTimeout(() => setAttempt(current => (current.src === src && current.step === 0 ? { src, step: 1 } : current)), 4000)
+    return () => window.clearTimeout(timer)
+  }, [src, step, url, loaded])
+  if (step >= 2) {
+    return <p className='notice notice--plain'>{t('planFailed')} <a href={page} target='_blank' rel='noreferrer'>{t('planPage')}</a></p>
+  }
+  return (
+    <figure className='plan'>
+      <div className='plan__frame'>
+        <a href={url} target='_blank' rel='noreferrer' title={t('planOpen')}>
+          <img key={url} className='plan__image' src={url} alt={t('floorPlan')} referrerPolicy='no-referrer' onLoad={() => setLoaded(url)} onError={() => setAttempt({ src, step: step + 1 })} />
+        </a>
+        {loaded === url && pins.map(pin => (
+          <button
+            key={pin.id}
+            type='button'
+            className={`plan__pin plan__pin--${pin.kind}${pin.active ? ' plan__pin--active' : ''}`}
+            style={{ left: `${pin.spot[0] * 100}%`, top: `${pin.spot[1] * 100}%` }}
+            title={pin.name}
+            aria-label={pin.name}
+            onClick={() => onPick?.(pin.id)}
+          />
+        ))}
+      </div>
+      <figcaption className='plan__caption'>
+        <a href={page} target='_blank' rel='noreferrer'>{t('planCredit')}</a>
+      </figcaption>
+    </figure>
+  )
+}
+
+/** Level tabs and the plan for one library, with every placed room pinned. */
+export function LibraryPlans ({ plans, rooms, availability, t, activeId, onPick }: {
+  plans: FloorPlans
+  rooms: StudyRoom[]
+  availability: Availability | null
+  t: T
+  activeId: string | null
+  onPick: (id: string) => void
+}) {
+  const active = rooms.find(room => room.id === activeId)
+  const [chosen, setChosen] = useState<string | null>(null)
+  const [followed, setFollowed] = useState<string | null>(null)
+  // Opening a room's card switches to its level once.
+  if (active?.spot && active.level && followed !== active.id) {
+    setFollowed(active.id)
+    setChosen(active.level)
+  }
+  const levels = plans.order.filter(level => plans.levels[level])
+  const level = chosen && plans.levels[chosen] ? chosen : levels.find(item => rooms.some(room => room.level === item && room.spot)) ?? levels[0]
+  const pins: PlanPin[] = rooms
+    .filter(room => room.level === level && room.spot)
+    .map(room => ({ id: room.id, name: room.name, spot: room.spot as [number, number], kind: statusOf(room, availability).kind, active: room.id === activeId }))
+  return (
+    <div className='plans'>
+      <div className='segmented segmented--wrap' role='tablist'>
+        {levels.map(item => (
+          <button key={item} type='button' className={item === level ? 'segmented__item segmented__item--on' : 'segmented__item'} onClick={() => setChosen(item)}>
+            {t('studyLevel', { level: item })}
+          </button>
+        ))}
+      </div>
+      <FloorPlan src={plans.levels[level]} page={plans.page} pins={pins} t={t} onPick={onPick} />
+      <p className='plan__legend'>
+        <span className='plan__dot plan__dot--free' />{t('studyFreeNow')}
+        <span className='plan__dot plan__dot--busy' />{t('planBooked')}
+        <span className='plan__dot plan__dot--walkin' />{t('planOther')}
+      </p>
+    </div>
+  )
+}
+
 interface StudyCardProps {
   room: StudyRoom
   availability: Availability | null
+  /** Floor plans of the room's library, when it publishes them. */
+  plans?: FloorPlans
   t: T
   open: boolean
   showLibrary: boolean
@@ -65,13 +170,13 @@ interface StudyCardProps {
   onLocate?: (room: StudyRoom) => void
 }
 
-export function StudyCard ({ room, availability, t, open, showLibrary, onToggle, onLocate }: StudyCardProps) {
+export function StudyCard ({ room, availability, plans, t, open, showLibrary, onToggle, onLocate }: StudyCardProps) {
   const status = statusOf(room, availability)
   const now = campusNow()
   const tomorrow = campusNow(new Date(Date.now() + 86400000)).date
   const place = [showLibrary ? room.library : '', room.level ? t('studyLevel', { level: room.level }) : ''].filter(Boolean).join(' · ')
   return (
-    <div className={open ? 'study-card study-card--open' : 'study-card'}>
+    <div className={open ? 'study-card study-card--open' : 'study-card'} id={`study-${room.id}`}>
       <button type='button' className='study-card__head' onClick={onToggle} aria-expanded={open}>
         <span className='study-card__main'>
           <span className='study-card__name'>{room.name}</span>
@@ -90,6 +195,17 @@ export function StudyCard ({ room, availability, t, open, showLibrary, onToggle,
             <div className='chips chips--static'>
               {room.features.map(feature => <span key={feature} className='chip chip--static'>{FEATURES[feature] ? t(FEATURES[feature]) : feature}</span>)}
             </div>
+          ) : null}
+          {plans && room.spot && plans.levels[room.level] ? (
+            <>
+              <FloorPlan
+                src={plans.levels[room.level]}
+                page={plans.page}
+                pins={[{ id: room.id, name: room.name, spot: room.spot, kind: status.kind, active: true }]}
+                t={t}
+              />
+              {room.spotArea ? <p className='plan__note'>{t('planArea', { area: room.spotArea })}</p> : null}
+            </>
           ) : null}
           {room.eid && isFresh(availability) ? (
             <>
@@ -115,6 +231,7 @@ export function StudyCard ({ room, availability, t, open, showLibrary, onToggle,
 interface StudyPanelProps {
   rooms: StudyRoom[]
   availability: Availability | null
+  plans: Record<string, FloorPlans>
   lang: Lang
   t: T
   onLocate: (room: StudyRoom) => void
@@ -123,7 +240,7 @@ interface StudyPanelProps {
 
 type Chip = 'free' | 'reservable' | 'group' | 'quiet'
 
-export function StudyPanel ({ rooms, availability, lang, t, onLocate, onClose }: StudyPanelProps) {
+export function StudyPanel ({ rooms, availability, plans, lang, t, onLocate, onClose }: StudyPanelProps) {
   const [chips, setChips] = useState<Set<Chip>>(new Set())
   const [openId, setOpenId] = useState<string | null>(null)
   const fresh = isFresh(availability)
@@ -174,6 +291,7 @@ export function StudyPanel ({ rooms, availability, lang, t, onLocate, onClose }:
                   key={room.id}
                   room={room}
                   availability={availability}
+                  plans={plans[room.library]}
                   t={t}
                   open={openId === room.id}
                   showLibrary={false}

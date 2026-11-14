@@ -15,15 +15,28 @@ export interface StudyRoom {
   text: string
   /** The room's page on library.washu.edu. */
   url: string
+  /** Where the room is on its level's floor plan, as fractions of the image's width and height. */
+  spot?: [number, number]
+  /** Set when the plan names only the area the room is in. */
+  spotArea?: string
   /** Its booking page on LibCal, when it can be booked there. */
   book?: string
   eid?: number
+}
+
+/** A library's published floor plans: one image per level. */
+export interface FloorPlans {
+  page: string
+  /** Levels from the top floor down. */
+  order: string[]
+  levels: Record<string, string>
 }
 
 export interface StudyData {
   source: string
   booking: string
   fetched: string
+  plans?: Record<string, FloorPlans>
   rooms: StudyRoom[]
 }
 

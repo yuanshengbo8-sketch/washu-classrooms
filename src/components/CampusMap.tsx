@@ -15,12 +15,14 @@ interface CampusMapProps {
   matches: Map<string, number> | null
   /** What `matches` counts: classrooms under a filter, or study rooms. */
   matchMode: 'rooms' | 'study'
+  /** Study rooms per building. */
+  studyCounts: Map<string, number>
   onSelect: (id: string) => void
   onFloor: (floor: number) => void
   onUnavailable: () => void
 }
 
-export default function CampusMap ({ campus, t, selectedId, roomsByFloor, highlightedFloor, matches, matchMode, onSelect, onFloor, onUnavailable }: CampusMapProps) {
+export default function CampusMap ({ campus, t, selectedId, roomsByFloor, highlightedFloor, matches, matchMode, studyCounts, onSelect, onFloor, onUnavailable }: CampusMapProps) {
   const host = useRef<HTMLDivElement>(null)
   const scene = useRef<CampusScene | null>(null)
   const callbacks = useRef({ onSelect, onFloor })
@@ -53,6 +55,10 @@ export default function CampusMap ({ campus, t, selectedId, roomsByFloor, highli
   useEffect(() => {
     if (ready) scene.current?.highlightFloor(highlightedFloor)
   }, [ready, highlightedFloor, selectedId])
+
+  useEffect(() => {
+    if (ready) scene.current?.setStudyBuildings(studyCounts)
+  }, [ready, studyCounts])
 
   useEffect(() => {
     if (ready) scene.current?.setMatches(matches, matchMode)

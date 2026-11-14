@@ -1,0 +1,47 @@
+{
+  "note": "Where each study room sits on the floor plans WashU Libraries publish. `at` is the centre of the room's label on the plan image, in pixels of that image (see `size`). Read off the published plans by hand; add a room only where the plan names it.",
+  "plans": {
+    "Olin Library": {
+      "page": "https://library.washu.edu/locations/olinlibrary/collection-locations-and-floorplans/",
+      "size": [1365, 1304],
+      "order": ["3", "2", "1", "A", "B"],
+      "levels": {
+        "3": "https://library.washu.edu/wp-content/uploads/2020/12/level3floorplanweb.png",
+        "2": "https://library.washu.edu/wp-content/uploads/2020/12/level2floorplanweb.png",
+        "1": "https://library.washu.edu/wp-content/uploads/2020/12/level1floorplanweb.png",
+        "A": "https://library.washu.edu/wp-content/uploads/2020/12/levelafloorplanweb.png",
+        "B": "https://library.washu.edu/wp-content/uploads/2020/12/levelbfloorplanweb.png"
+      }
+    }
+  },
+  "spots": {
+    "graduate-study-326": { "level": "3", "at": [473, 85] },
+    "quiet-study-323": { "level": "3", "at": [190, 650] },
+    "sky-room-332": { "level": "3", "at": [891, 798] },
+
+    "virginia-dowsing-toliver-group-study-room-204": { "level": "2", "at": [1103, 580] },
+    "group-study-205": { "level": "2", "at": [1103, 656] },
+    "group-study-206": { "level": "2", "at": [1103, 740] },
+    "group-study-207": { "level": "2", "at": [1103, 817] },
+    "group-study-208": { "level": "2", "at": [1103, 893] },
+    "quiet-study-210": { "level": "2", "at": [966, 1003] },
+    "reading-room-211": { "level": "2", "at": [777, 1007] },
+    "quiet-study-room-212": { "level": "2", "at": [591, 1005] },
+    "graduate-study-213": { "level": "2", "at": [467, 1003] },
+    "graduate-study-214": { "level": "2", "at": [345, 1003] },
+    "lerner-study-room-215": { "level": "2", "at": [201, 1003] },
+    "group-study-217": { "level": "2", "at": [190, 670] },
+    "faculty-study-room": { "level": "2", "at": [190, 370] },
+
+    "ginkgo-room-101": { "level": "1", "at": [1090, 637] },
+
+    "graduate-study-a30": { "level": "A", "at": [225, 785] },
+    "instruction-room-1": { "level": "A", "at": [1095, 525] },
+    "instruction-room-3": { "level": "A", "at": [1118, 355] },
+    "expedition-office": { "level": "A", "at": [910, 797], "area": "Newman Exploration Center" },
+    "research-studio-a06": { "level": "A", "at": [1112, 876] },
+
+    "graduate-study-b25": { "level": "B", "at": [240, 283] },
+    "quiet-study-b24": { "level": "B", "at": [255, 402] }
+  }
+}

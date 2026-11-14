@@ -5,8 +5,8 @@ import type { Lang, StringKey } from '../lib/i18n'
 import { term } from '../lib/i18n'
 import { directionsUrl, shareUrl } from '../lib/store'
 import { Icon } from './Icon'
-import type { Availability, StudyRoom } from '../lib/study'
-import { StudyCard } from './StudyPanel'
+import type { Availability, FloorPlans, StudyRoom } from '../lib/study'
+import { LibraryPlans, StudyCard } from './StudyPanel'
 import { REPO_URL } from './Modals'
 
 type T = (key: StringKey, vars?: Record<string, string | number>) => string
@@ -200,6 +200,7 @@ interface BuildingPanelProps {
   rooms: Room[]
   studyRooms: StudyRoom[]
   availability: Availability | null
+  plans: Record<string, FloorPlans>
   lang: Lang
   t: T
   filters: Filters
@@ -211,7 +212,7 @@ interface BuildingPanelProps {
   onClose: () => void
 }
 
-export function BuildingPanel ({ building, rooms, studyRooms, availability, lang, t, filters, floor, favorites, onFloor, onHoverFloor, onOpen, onClose }: BuildingPanelProps) {
+export function BuildingPanel ({ building, rooms, studyRooms, availability, plans, lang, t, filters, floor, favorites, onFloor, onHoverFloor, onOpen, onClose }: BuildingPanelProps) {
   const [openStudy, setOpenStudy] = useState<string | null>(null)
   const floors = useMemo(() => [...new Set(rooms.map(room => room.floor))].sort((a, b) => a - b), [rooms])
   const shown = rooms.filter(room => floor === null || room.floor === floor).sort(compareRooms)
@@ -252,6 +253,27 @@ export function BuildingPanel ({ building, rooms, studyRooms, availability, lang
         ) : null}
         {studyRooms.length > 0 ? (
           <div className='floor-group'>
+            {(() => {
+              // Floor plans, for the library in this building that publishes them.
+              const library = studyRooms.find(item => plans[item.library] && item.spot)?.library
+              if (!library) return null
+              return (
+                <>
+                  <h3 className='floor-group__title'>{t('floorPlan')}</h3>
+                  <LibraryPlans
+                    plans={plans[library]}
+                    rooms={studyRooms.filter(item => item.library === library)}
+                    availability={availability}
+                    t={t}
+                    activeId={openStudy}
+                    onPick={id => {
+                      setOpenStudy(id)
+                      window.setTimeout(() => document.getElementById(`study-${id}`)?.scrollIntoView({ behavior: 'smooth', block: 'nearest' }), 60)
+                    }}
+                  />
+                </>
+              )
+            })()}
             <h3 className='floor-group__title'>{t('studyHere')}</h3>
             <div className='study-list'>
               {studyRooms.map(item => (

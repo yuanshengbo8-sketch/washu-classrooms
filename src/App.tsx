@@ -229,6 +229,7 @@ export function App () {
         rooms={buildingRooms}
         studyRooms={buildingStudyRooms}
         availability={availability}
+        plans={study?.plans ?? {}}
         lang={lang}
         t={t}
         filters={filters}
@@ -246,6 +247,7 @@ export function App () {
       <StudyPanel
         rooms={studyRooms}
         availability={availability}
+        plans={study?.plans ?? {}}
         lang={lang}
         t={t}
         onLocate={target => setBuildingId(target.building)}
@@ -294,6 +296,7 @@ export function App () {
               highlightedFloor={hoverFloor ?? (room ? room.floor : floor)}
               matches={studyOpen ? studyCounts : matches}
               matchMode={studyOpen ? 'study' : 'rooms'}
+              studyCounts={studyCounts}
               onSelect={openBuilding}
               onFloor={value => {
                 setRoomId(null)
