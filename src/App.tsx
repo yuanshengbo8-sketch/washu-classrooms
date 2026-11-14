@@ -4,9 +4,12 @@ import { NO_FILTERS, filtersActive, matchesFilters } from './lib/types'
 import type { Lang, StringKey } from './lib/i18n'
 import { initialLang, safeSet, translate } from './lib/i18n'
 import { loadFavorites, readUrl, saveFavorites, writeUrl } from './lib/store'
+import type { Availability, StudyData } from './lib/study'
+import { isFresh, loadAvailability, statusOf } from './lib/study'
 import { TopBar } from './components/TopBar'
 import { BuildingPanel, FinderPanel, RoomDetail } from './components/Panels'
 import { AboutModal, CourseModal } from './components/Modals'
+import { StudyPanel } from './components/StudyPanel'
 
 const CampusMap = lazy(() => import('./components/CampusMap'))
 const SeatView = lazy(() => import('./components/SeatView'))
@@ -43,6 +46,11 @@ export function App () {
   const [filters, setFilters] = useState<Filters>(NO_FILTERS)
   const [favorites, setFavorites] = useState<Set<string>>(loadFavorites)
 
+  const [studyOpen, setStudyOpen] = useState(false)
+  const [study, setStudy] = useState<StudyData | null>(null)
+  const [availability, setAvailability] = useState<Availability | null>(null)
+  const [, setTick] = useState(0)
+
   const [seatRoom, setSeatRoom] = useState<Room | null>(null)
   const [aboutOpen, setAboutOpen] = useState(false)
   const [termId, setTermId] = useState(TERMS[0].id)
@@ -68,6 +76,32 @@ export function App () {
       .catch(() => { if (!cancelled) setError(true) })
     return () => { cancelled = true }
   }, [])
+
+  // Study rooms and their bookings load on their own, so a slow library
+  // feed never holds up the map.
+  useEffect(() => {
+    let cancelled = false
+    loadJson<StudyData>('study-rooms.json').then(loaded => { if (!cancelled) setStudy(loaded) }).catch(() => {})
+    const refresh = () => loadAvailability(dataUrl('study-availability.json')).then(loaded => { if (!cancelled && loaded) setAvailability(loaded) })
+    refresh()
+    const reload = window.setInterval(refresh, 5 * 60 * 1000)
+    // Re-evaluate "free until" as the clock moves.
+    const tick = window.setInterval(() => setTick(value => value + 1), 60 * 1000)
+    return () => {
+      cancelled = true
+      window.clearInterval(reload)
+      window.clearInterval(tick)
+    }
+  }, [])
+
+  const studyRooms = useMemo(() => study?.rooms ?? [], [study])
+  const studyCounts = useMemo(() => {
+    const counts = new Map<string, number>()
+    for (const item of studyRooms) counts.set(item.building, (counts.get(item.building) ?? 0) + 1)
+    return counts
+  }, [studyRooms])
+  const buildingStudyRooms = useMemo(() => studyRooms.filter(item => item.building === buildingId), [studyRooms, buildingId])
+  const studyFree = isFresh(availability) ? studyRooms.filter(item => statusOf(item, availability).kind === 'free').length : 0
 
   const rooms = useMemo(() => data?.rooms ?? [], [data])
   const buildings = useMemo(() => campus?.buildings ?? [], [campus])
@@ -130,6 +164,7 @@ export function App () {
     setFloor(null)
     setHoverFloor(null)
     setFinderOpen(false)
+    setStudyOpen(false)
   }, [])
 
   const toggleFavorite = useCallback((target: Room) => {
@@ -149,6 +184,16 @@ export function App () {
     setFloor(null)
     setFavoritesOnly(onlyFavorites)
     setFinderOpen(!same)
+    setStudyOpen(false)
+  }
+
+  const openStudy = () => {
+    const same = studyOpen && !buildingId
+    setBuildingId(null)
+    setRoomId(null)
+    setFloor(null)
+    setFinderOpen(false)
+    setStudyOpen(!same)
   }
 
   const filterCount =
@@ -182,6 +227,8 @@ export function App () {
       <BuildingPanel
         building={building}
         rooms={buildingRooms}
+        studyRooms={buildingStudyRooms}
+        availability={availability}
         lang={lang}
         t={t}
         filters={filters}
@@ -190,6 +237,18 @@ export function App () {
         onFloor={setFloor}
         onHoverFloor={setHoverFloor}
         onOpen={target => openRoom(target, 'building')}
+        // Opened from the study list: closing goes back to it.
+        onClose={studyOpen ? () => { setBuildingId(null); setFloor(null) } : closePanel}
+      />
+    )
+  } else if (studyOpen) {
+    panel = (
+      <StudyPanel
+        rooms={studyRooms}
+        availability={availability}
+        lang={lang}
+        t={t}
+        onLocate={target => setBuildingId(target.building)}
         onClose={closePanel}
       />
     )
@@ -233,7 +292,8 @@ export function App () {
               selectedId={buildingId}
               roomsByFloor={roomsByFloor}
               highlightedFloor={hoverFloor ?? (room ? room.floor : floor)}
-              matches={matches}
+              matches={studyOpen ? studyCounts : matches}
+              matchMode={studyOpen ? 'study' : 'rooms'}
               onSelect={openBuilding}
               onFloor={value => {
                 setRoomId(null)
@@ -250,6 +310,9 @@ export function App () {
           rooms={rooms}
           courses={courses}
           finderOpen={finderOpen && !buildingId && !favoritesOnly}
+          studyOpen={studyOpen && !buildingId}
+          studyFree={studyFree}
+          onStudy={openStudy}
           filterCount={filterCount}
           favoriteCount={favorites.size}
           onNeedCourses={() => loadTerm(termId)}

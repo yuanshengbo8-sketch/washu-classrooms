@@ -2,17 +2,18 @@
 
 [English](README.md) | **简体中文**
 
-把 WashU Danforth 校区做成一张 3D 地图，显示 CTL 教室目录里的每一间教室：在哪栋楼哪一层、能坐多少人、有什么设备、长什么样，以及坐在某个位置大概能看到什么。
+把 WashU Danforth 校区做成一张 3D 地图，用来找地方自习和上课：图书馆自习室和它们的实时预约情况，以及所有能查到公开记录的教室——在哪栋楼哪一层、能坐多少人、有什么设备、长什么样，坐在某个位置大概能看到什么。
 
-**[打开网站](https://yuanshengbo8-sketch.github.io/washu-classrooms/)** · **[Seigle Hall](https://yuanshengbo8-sketch.github.io/washu-classrooms/?b=seigle-hall)** · **[Brown 100](https://yuanshengbo8-sketch.github.io/washu-classrooms/?r=brown-100)**
+**[打开网站](https://yuanshengbo8-sketch.github.io/washu-classrooms/)** · **[Olin Library 自习室](https://yuanshengbo8-sketch.github.io/washu-classrooms/?b=olin-library)** · **[Simon Hall](https://yuanshengbo8-sketch.github.io/washu-classrooms/?b=simon-hall)** · **[Brown 100](https://yuanshengbo8-sketch.github.io/washu-classrooms/?r=brown-100)**
 
 这是非官方的学生项目，与 Washington University in St. Louis 没有隶属关系，也未获其背书。
 
 ## 功能
 
-- **3D 校园地图：** 整个 Danforth 校区由 OpenStreetMap 建筑轮廓生成。有教室的楼是 WashU 红色，标签上写着教室数量。拖动平移，滚轮缩放，右键拖动旋转。
+- **自习室与实时预约：** WashU 图书馆列出的 34 处自习空间，分布在 Olin Library 以及商科、艺术、东亚图书馆。可预约的房间会显示现在是否空着、空到几点，今天和明天的预约时间条，以及直达该房间 LibCal 预约页的按钮；其余的标明先到先得、仅研究生等。
+- **3D 校园地图：** 整个 Danforth 校区由 OpenStreetMap 生成：带屋顶和窗格的建筑、校内 1600 棵已测绘的树、草坪、广场、球场、停车场和带路名的道路。有教室的楼是红色屋顶，标签上写着教室数量。拖动平移，滚轮缩放，右键拖动旋转。
 - **楼层分解：** 选中一栋楼后会按楼层拆开。有教室的楼层是红色并显示数量，点楼层可以筛选列表。楼层由房间号推断，不会把教室放到虚构的位置。
-- **所有教学楼都有标注：** Olin、Law、Sam Fox、McKelvey 等学院的教室由学院自己排课（Bauer、Knight、Anheuser-Busch、Givens、Green 等），WashU 没有公开这些教室的清单。这些楼在地图上有标注、可以点开，会列出 WashU 公开页面上出现过的少数房间，并明确说明清单不完整。
+- **CTL 目录之外的教室：** Olin、Law、Sam Fox、McKelvey 等学院的教室由学院自己排课，所以 CTL 目录里没有（Simon Hall 一楼、Bauer、Anheuser-Busch、Urbauer、Bixby 等）。这些教室从 WashU 旧版公开课表在 Internet Archive 的存档里补齐：目前共约 350 间、51 栋楼。它们没有照片；页面会写明来源，以及最近一次有课是哪一年。
 - **教室详情：** 容量、座位形式、黑板、投影幕、麦克风、遮光效果、无障碍、设备清单、照片、座位图；CTL 提供 360° 全景的教室会有入口。
 - **座位视角：** 在教室示意图里点任意座位，从那个位置看黑板，同时显示距离、偏离正中的角度，以及一张不同字号的幻灯片。示意图根据座位数和座位形式生成，不是真实教室；真实环境请看照片和 360° 全景。
 - **找教室：** 按最少座位数、座位形式、无障碍、360° 全景和设备筛选。地图会把没有匹配教室的楼变淡，其余的楼显示匹配数量。
@@ -22,12 +23,16 @@
 
 ## 目前做不到的
 
-这个项目参考的 UCSD 版本可以显示「现在哪间教室空着」，WashU 版本暂时不行，原因是 WashU 没有公开每节课的上课教室：
+这个项目参考的 UCSD 版本可以显示「现在哪间教室空着」。WashU 版本目前只对图书馆自习室做得到，因为 WashU 已不再公开每节课的上课教室：
 
 - 教务处公开的 [Class Schedule Search](https://registrar.washu.edu/classes-registration/class-schedule-search/) 只有星期、时间、老师和选课人数，没有地点。
 - 上课教室在 Workday 和 reserve.wustl.edu 里，两者都需要 WashU Key 登录。
 
+- 旧版公开课表有上课教室，这里补充的教室就来自它；但它在 2025 年停用，存档也只覆盖每学期的一部分课程。这足以确认某间教室存在，不足以判断它现在空不空。
+
 所以这里的课程搜索只显示时间和老师。如果 WashU 以后公开地点，或者有同学导出自己的 Workday 数据并愿意分享，就可以在现有数据上加教室课表和「现在空闲」。
+
+Olin 商学院的小组自习室在 reserve.wustl.edu 预约，需要 WashU Key 登录，所以本站只给出入口，不显示预约情况。
 
 ## 本地运行
 
@@ -53,7 +58,9 @@ npm run preview     # 预览构建结果
 
 ```sh
 npm run data:classrooms          # CTL 教室目录，按 robots.txt 要求每 10 秒一页（约 22 分钟）
-npm run data:osm                 # OpenStreetMap 建筑、道路、绿地
+npm run data:osm                 # OpenStreetMap 建筑、道路、树木、绿地
+npm run data:archive             # Internet Archive 上的旧版课表存档（一小时以上），并生成 data/listing-rooms.json
+npm run data:study               # 图书馆自习室及其 LibCal 预约页
 npm run data:build               # 生成 classrooms.json 和 campus.json
 
 npm run data:courses -- "2026 Fall"     # 生成 courses-2026F.json
@@ -61,6 +68,10 @@ npm run data:courses -- "2027 Spring"   # 生成 courses-2027S.json
 ```
 
 新增学期：对该学期运行 `data:courses`，再把它加进 `src/App.tsx` 的 `TERMS`。
+
+### 自习室实时预约
+
+`.github/workflows/study-availability.yml` 白天每 20 分钟运行一次：读取 LibCal 公开的预约表（3 个请求，间隔 10 秒，无需登录），把一个 JSON 文件推送到 `live-data` 分支，网站从那里读取。在 Actions 里停用这个 workflow 即可关闭；关闭后网站会提示暂无实时数据，但仍保留 LibCal 链接。`npm run data:availability` 可以在本地生成同样的文件。
 
 ### 补充学院自管的教室
 
@@ -81,10 +92,12 @@ npm run data:courses -- "2027 Spring"   # 生成 courses-2027S.json
 
 ## 数据与准确性
 
-- **教室：** [CTL Classroom Directory](https://ctl.wustl.edu/classrooms/)，31 栋楼共 129 间教室。它只包含教务处统一排课的公共教室，不含学院自管的教室；后者有少量从 `data/extra-rooms.json` 补充，每条都带来源。照片、座位图、360° 全景都链接自 ctl.wustl.edu，版权归 WashU。
+- **教室：** [CTL Classroom Directory](https://ctl.wustl.edu/classrooms/)，31 栋楼共 129 间教室，是教务处统一排课的公共教室。照片、座位图、360° 全景都链接自 ctl.wustl.edu，版权归 WashU。
+- **其他教室：** WashU 旧版公开课表（courses.wustl.edu 与 acadinfo.wustl.edu/CourseListings，2025 年停用），取自 [Internet Archive](https://web.archive.org/) 的存档。存档里至少有两个班次在某房间上课，才会收录这间房。这些房间显示的座位数是在那里排过的最大班级名额，是下限而不是实际容量。`data/listing-rooms.json` 是汇总后的清单；`data/extra-rooms.json` 是少量手工补充的房间。
+- **自习室：** [WashU 图书馆自习室目录](https://library.washu.edu/study-rooms/) 和图书馆公开的 [LibCal](https://wustl.libcal.com/allspaces) 预约页。预约情况是最多滞后 20 分钟的副本，以 LibCal 为准，预约也在 LibCal 完成。
 - **课程：** 教务处公开的 Class Schedule Search。官方说明每 48 小时刷新一次，不保证实时准确；这里是各文件所标日期的快照。
-- **地图：** © [OpenStreetMap](https://www.openstreetmap.org/copyright) 贡献者，ODbL。
-- **楼层和高度：** 楼层由房间号推断（`L006`、`G052` 和小于 100 的号码算地下层，`301` 算 3 楼）。建筑高度优先用 OpenStreetMap 的标注，没有则估算。楼层分解只用于展示，不是实测。
+- **地图：** © [OpenStreetMap](https://www.openstreetmap.org/copyright) 贡献者，ODbL。校内的树是 OpenStreetMap 上已测绘的；周边街区的树、屋顶形状和窗户是为了好看而生成的。
+- **楼层和高度：** 楼层由房间号推断（`L006`、`G052` 和小于 100 的号码算底层，`301` 算 3 楼；工学院几栋楼的四位房间号以楼层开头，`2101` 算 2 楼）。建筑高度优先用 OpenStreetMap 的标注，没有则估算。楼层分解只用于展示，不是实测。
 
 ## 致谢与许可
 

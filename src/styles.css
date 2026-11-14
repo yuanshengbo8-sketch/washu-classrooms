@@ -634,3 +634,42 @@ h2, h3, p { margin: 0; }
 @media (prefers-reduced-motion: reduce) {
   * { animation: none !important; transition: none !important; }
 }
+
+/* ---- study rooms --------------------------------------------------------- */
+.pill__badge--green { background: var(--green); }
+.pill--on .pill__badge--green { background: #fff; color: var(--green); }
+.pill--study.pill--on, .pill--study.pill--on:hover { background: var(--green); }
+.map-label--study .map-label__count { background: var(--green); }
+.map-label__count:empty { display: none; }
+.study-chips { margin: 12px 0 4px; }
+.chip:disabled { opacity: 0.45; cursor: default; }
+.study-list { display: grid; gap: 8px; }
+.study-card { border: 1px solid var(--line); border-radius: 12px; background: #fff; overflow: hidden; }
+.study-card--open { border-color: var(--green); box-shadow: 0 2px 10px rgba(44, 82, 52, 0.12); }
+.study-card__head {
+  display: flex; align-items: center; justify-content: space-between; gap: 10px;
+  width: 100%; padding: 10px 12px; border: 0; background: none; text-align: left; cursor: pointer; font: inherit; color: inherit;
+}
+.study-card__head:hover { background: var(--cream); }
+.study-card__main { display: grid; gap: 2px; min-width: 0; }
+.study-card__name { font-weight: 600; font-size: 14.5px; line-height: 1.3; }
+.study-card__meta { font-size: 12.5px; color: var(--muted); }
+.study-card__body { display: grid; gap: 10px; padding: 2px 12px 12px; }
+.study-card__text { margin: 0; font-size: 13.5px; line-height: 1.5; color: #4a4a44; }
+.status {
+  flex: none; padding: 4px 9px; border-radius: 999px; font-size: 12px; font-weight: 600; white-space: nowrap;
+  background: var(--cream); color: #5b5b54;
+}
+.status--free { background: var(--green-soft); color: #1f4a29; }
+.status--busy { background: var(--red-soft); color: var(--red-dark); }
+.status--closed { background: #eeece6; color: #77766f; }
+.day-strip { display: grid; gap: 4px; }
+.day-strip__label { font-size: 12px; color: var(--muted); }
+.day-strip__bar { position: relative; height: 14px; border-radius: 7px; background: #cfe4d2; overflow: hidden; }
+.day-strip__busy { position: absolute; top: 0; bottom: 0; background: #d98a97; }
+.day-strip__now { position: absolute; top: -2px; bottom: -2px; width: 2px; background: #1c1c1a; }
+.day-strip__hours { position: relative; height: 13px; font-size: 10.5px; color: var(--muted); }
+.day-strip__hours span { position: absolute; transform: translateX(-50%); white-space: nowrap; }
+.day-strip__hours span:first-child { transform: none; }
+.study-source { margin: 14px 0 4px; font-size: 12.5px; color: var(--muted); }
+.empty { margin: 16px 0; color: var(--muted); font-size: 14px; }

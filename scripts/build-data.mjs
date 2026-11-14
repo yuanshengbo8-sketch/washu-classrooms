@@ -72,14 +72,16 @@ const slugify = text =>
 /**
  * Floor index from a WashU room number. 0 is the lower level. Rooms numbered
  * below 100 (14, 017) or prefixed L, B or G sit on the lower level; 301 is
- * on floor 3.
+ * on floor 3. The engineering buildings use four digits with the floor first
+ * (Jolley 2101, Brauer 3015).
  */
 export function floorOf (room) {
   const text = room.trim().toUpperCase()
-  if (/^[LBG]/.test(text)) return 0
-  const digits = text.match(/\d+/)?.[0]
-  if (!digits) return 1
-  return digits.length >= 3 ? Number(digits.slice(0, digits.length - 2)) : 0
+  if (/^[LBG]\d/.test(text)) return 0
+  // Named rooms such as "ST1" carry no floor.
+  if (!/^\d/.test(text)) return 1
+  const digits = text.match(/\d+/)[0]
+  return digits.length >= 3 ? Number(digits[0]) : 0
 }
 
 function parseClassroom (html, slug) {
@@ -192,6 +194,89 @@ for (const item of extra.rooms) {
     tour: null,
     url: item.source,
     managedBy: item.managedBy
+  })
+}
+// Rooms that held classes according to WashU's old public Course Listings
+// (see scripts/fetch-archive.mjs). They add the rooms the CTL directory leaves
+// out: school-run classrooms, department seminar rooms and studios.
+const LISTING_BUILDINGS = {
+  'AB Law Bldg': 'Anheuser-Busch Hall', 'Academy Bldg': 'Academy Building', Bauer: 'Bauer Hall', Bixby: 'Bixby Hall', Blewett: 'Blewett Hall',
+  'Brauer Hall': 'Brauer Hall', Brown: 'Brown Hall', Busch: 'Busch Hall', 'Busch Lab': 'Busch Laboratory', Compton: 'Compton Laboratory',
+  Crow: 'Crow Hall', 'Cupples I': 'Cupples I Hall', 'Cupples II': 'Cupples II Hall', 'Danforth Ctr': 'Danforth University Center',
+  Duncker: 'Duncker Hall', Eads: 'Eads Hall', Gaylord: 'Gaylord Music Library', Givens: 'Givens Hall', Goldfarb: 'Goldfarb Hall',
+  'Green Hall': 'Green Hall', Hillman: 'Hillman Hall', 'January Hall': 'January Hall', Jolley: 'Jolley Hall', Jubel: 'Jubel Hall',
+  Kemper: 'Mildred Lane Kemper Art Museum', 'Knight Hall': 'Knight Hall', 'Life Sciences': 'Life Sciences Building',
+  'Lopata Hall': 'Lopata Hall', 'Lopata House': 'Lucy and Stanley Lopata House', Louderman: 'Louderman Hall',
+  Mallinckrodt: 'Mallinckrodt Student Center', McDonnell: 'McDonnell Hall', 'McKelvey Hall': 'McKelvey Hall', McMillan: 'McMillan Hall',
+  McMillen: 'McMillen Laboratory', 'Music Cls Bldg': 'Music Classroom Building', Rebstock: 'Rebstock Hall', Ridgley: 'Ridgley Hall',
+  Rudolph: 'Scott Rudolph Hall', 'Schnuck Pav': 'Schnuck Pavilion', Seigle: 'Seigle Hall', Sever: 'Sever Hall', Simon: 'Simon Hall',
+  'Somers Family': 'Somers Family Hall', Steinberg: 'Steinberg Hall', 'Tietjens Hall': 'Tietjens Hall', Umrath: 'Umrath Hall',
+  Urbauer: 'Urbauer Hall', 'Village House': 'Village House', 'Walker Hall': 'Earl E. and Myrtle E. Walker Hall', Weil: 'Weil Hall',
+  Whitaker: 'Whitaker Hall', Wilson: 'Wilson Hall', 'Wom Bldg': "Ann W. Olin Women's Building", Wrighton: 'Wrighton Hall'
+}
+/** Who schedules the rooms of these buildings that are not in the CTL pool. */
+const ROOM_MANAGERS = {
+  'Simon Hall': 'Olin Business School', 'Bauer Hall': 'Olin Business School', 'Knight Hall': 'Olin Business School',
+  'Anheuser-Busch Hall': 'School of Law', 'Goldfarb Hall': 'Brown School', 'Hillman Hall': 'Brown School',
+  'Givens Hall': 'Sam Fox School of Design & Visual Arts', 'Bixby Hall': 'Sam Fox School of Design & Visual Arts',
+  'Earl E. and Myrtle E. Walker Hall': 'Sam Fox School of Design & Visual Arts', 'Steinberg Hall': 'Sam Fox School of Design & Visual Arts',
+  'Weil Hall': 'Sam Fox School of Design & Visual Arts', 'Mildred Lane Kemper Art Museum': 'Sam Fox School of Design & Visual Arts',
+  'Brauer Hall': 'McKelvey School of Engineering', 'Green Hall': 'McKelvey School of Engineering', 'McKelvey Hall': 'McKelvey School of Engineering',
+  'Urbauer Hall': 'McKelvey School of Engineering', 'Jolley Hall': 'McKelvey School of Engineering', 'Jubel Hall': 'McKelvey School of Engineering',
+  'Whitaker Hall': 'McKelvey School of Engineering', 'Lopata Hall': 'McKelvey School of Engineering'
+}
+const roomKey = text => text.toUpperCase().replace(/^0+(?=\d)/, '')
+let listingCount = 0
+const unknownLabels = new Map()
+let listings = { rooms: [] }
+try {
+  listings = JSON.parse(await readFile(join(ROOT, 'data', 'listing-rooms.json'), 'utf8'))
+} catch {
+  console.warn('data/listing-rooms.json not found: run scripts/build-archive.mjs')
+}
+for (const item of listings.rooms) {
+  const name = LISTING_BUILDINGS[item.b]
+  if (!name) {
+    unknownLabels.set(item.b, (unknownLabels.get(item.b) ?? 0) + item.n)
+    continue
+  }
+  const building = slugify(name)
+  const known = classrooms.find(room => room.building === building && roomKey(room.room) === roomKey(item.r))
+  if (known) {
+    // Keep the directory entry and note how recently classes met there.
+    known.lastYear = item.last
+    known.sections = item.n
+    continue
+  }
+  // One sighting can be a typo in the listing; two or more is a room.
+  if (item.n < 2) continue
+  listingCount++
+  classrooms.push({
+    id: `${building}-${slugify(item.r)}`,
+    building,
+    buildingName: name,
+    room: item.r,
+    note: '',
+    floor: floorOf(item.r),
+    capacity: null,
+    style: '',
+    boardType: '',
+    boards: null,
+    screens: null,
+    wirelessMics: null,
+    micFor: '',
+    darkening: '',
+    accessible: false,
+    equipment: [],
+    photos: [],
+    seatMaps: [],
+    tour: null,
+    url: '',
+    source: 'listings',
+    largestClass: item.seats,
+    lastYear: item.last,
+    sections: item.n,
+    ...(ROOM_MANAGERS[name] ? { managedBy: ROOM_MANAGERS[name] } : {})
   })
 }
 classrooms.sort((a, b) => a.buildingName.localeCompare(b.buildingName) || a.room.localeCompare(b.room, 'en', { numeric: true }))
@@ -353,27 +438,192 @@ const PATH_KINDS = {
   secondary: 'major', secondary_link: 'major', primary: 'major', primary_link: 'major',
   trunk: 'major', trunk_link: 'major', motorway: 'major', motorway_link: 'major', living_street: 'road'
 }
-const AREA_KINDS = { pitch: 'pitch', park: 'grass', garden: 'grass', track: 'pitch', grass: 'grass', forest: 'wood', recreation_ground: 'grass', wood: 'wood', scrub: 'wood', water: 'water', parking: 'parking' }
+const AREA_KINDS = {
+  pitch: 'pitch', track: 'track', park: 'grass', garden: 'garden', flowerbed: 'garden', playground: 'play',
+  grass: 'grass', meadow: 'grass', recreation_ground: 'grass', forest: 'wood', wood: 'wood', scrub: 'scrub',
+  water: 'water', fountain: 'water', swimming_pool: 'pool', parking: 'parking'
+}
+const SPORTS = { tennis: 'tennis', basketball: 'court', volleyball: 'court', running: 'track', athletics: 'track' }
 
 const paths = []
 const areas = []
+const trees = []
+const namedRoads = new Map()
+const inBounds = ([x, y]) => Math.abs(x) < 1500 && Math.abs(y) < 1000
+
 for (const element of osm.elements) {
   const tags = element.tags ?? {}
-  if (element.type !== 'way' || !element.geometry || tags.building) continue
-  if (tags.highway) {
-    if (tags.tunnel === 'yes' || tags.indoor === 'yes' || tags.area === 'yes') continue
-    const kind = PATH_KINDS[tags.highway]
+  if (tags.building) continue
+  if (element.type === 'node') {
+    if (tags.natural === 'tree') trees.push(project(element))
+    continue
+  }
+  if (element.type === 'relation') {
+    // Multipolygon lawns and plazas: keep the outer rings.
+    const kind = tags.highway === 'pedestrian' ? 'plaza' : AREA_KINDS[tags.landuse]
     if (!kind) continue
+    for (const member of element.members ?? []) {
+      if (member.role !== 'outer' || !member.geometry) continue
+      const points = ring(member.geometry)
+      if (points.length >= 3 && Math.abs(area(points)) > 20) areas.push({ k: kind, p: points })
+    }
+    continue
+  }
+  if (!element.geometry) continue
+  if (tags.railway) {
+    if (tags.tunnel !== 'yes') paths.push({ k: 'rail', p: ring(element.geometry) })
+    continue
+  }
+  if (tags.natural === 'tree_row') {
+    // One tree every nine metres along the row.
+    const points = ring(element.geometry)
+    for (let i = 0; i < points.length - 1; i++) {
+      const [x1, y1] = points[i]
+      const [x2, y2] = points[i + 1]
+      const steps = Math.max(1, Math.round(Math.hypot(x2 - x1, y2 - y1) / 9))
+      for (let step = 0; step < steps; step++) trees.push([round(x1 + ((x2 - x1) * step) / steps), round(y1 + ((y2 - y1) * step) / steps)])
+    }
+    continue
+  }
+  if (tags.highway) {
+    if (tags.tunnel === 'yes' || tags.indoor === 'yes') continue
     const closed = element.geometry.length > 2 && element.nodes?.[0] === element.nodes?.[element.nodes.length - 1]
     const points = ring(element.geometry)
+    if (tags.area === 'yes' || (closed && tags.highway === 'pedestrian')) {
+      if (points.length >= 3 && Math.abs(area(points)) > 20) areas.push({ k: 'plaza', p: points })
+      continue
+    }
+    const kind = tags.highway === 'steps' ? 'steps' : PATH_KINDS[tags.highway]
+    if (!kind) continue
     if (closed) points.push(points[0])
-    if (points.length > 1) paths.push({ k: kind, p: points })
+    if (points.length < 2) continue
+    paths.push({ k: kind, p: points })
+    if (tags.name && (kind === 'major' || kind === 'road')) {
+      const list = namedRoads.get(tags.name) ?? []
+      list.push({ kind, points })
+      namedRoads.set(tags.name, list)
+    }
     continue
   }
   const kind = AREA_KINDS[tags.leisure] ?? AREA_KINDS[tags.landuse] ?? AREA_KINDS[tags.natural] ?? AREA_KINDS[tags.amenity]
   if (!kind) continue
   const points = ring(element.geometry)
-  if (points.length >= 3 && Math.abs(area(points)) > 20) areas.push({ k: kind, p: points })
+  if (points.length < 3 || Math.abs(area(points)) < (kind === 'water' || kind === 'pool' ? 6 : 20)) continue
+  const sport = kind === 'pitch' ? SPORTS[(tags.sport ?? '').split(';')[0]] : null
+  areas.push(sport === 'track' ? { k: 'track', p: points } : sport ? { k: 'pitch', s: sport, p: points } : { k: kind, p: points })
+}
+
+/** Street names laid along the road: one every 420 m, on the straightest stretch nearby. */
+const roadLabels = []
+const ROAD_NAMES = { Boulevard: 'Blvd', Avenue: 'Ave', Parkway: 'Pkwy', Drive: 'Dr', Street: 'St', Road: 'Rd', Place: 'Pl', Lane: 'Ln', North: 'N', South: 'S' }
+for (const [name, list] of namedRoads) {
+  const text = name.split(' ').map(word => ROAD_NAMES[word] ?? word).join(' ')
+  const spots = []
+  for (const { kind, points } of list) {
+    for (let i = 0; i < points.length - 1; i++) {
+      const [x1, y1] = points[i]
+      const [x2, y2] = points[i + 1]
+      const length = Math.hypot(x2 - x1, y2 - y1)
+      if (length < (kind === 'major' ? 45 : 32)) continue
+      spots.push({ x: (x1 + x2) / 2, y: (y1 + y2) / 2, a: Math.atan2(y2 - y1, x2 - x1), length, kind })
+    }
+  }
+  spots.sort((a, b) => b.length - a.length)
+  const kept = []
+  for (const spot of spots) {
+    if (!inBounds([spot.x, spot.y])) continue
+    if (kept.some(other => Math.hypot(other.x - spot.x, other.y - spot.y) < 420)) continue
+    kept.push(spot)
+    // Keep the text upright when north is up.
+    let angle = spot.a
+    if (angle > Math.PI / 2) angle -= Math.PI
+    if (angle <= -Math.PI / 2) angle += Math.PI
+    roadLabels.push({ t: text, k: spot.kind, x: round(spot.x), y: round(spot.y), a: Math.round(angle * 1000) / 1000 })
+  }
+}
+
+/** Roof form. Most of the Danforth Campus is Collegiate Gothic with pitched slate roofs. */
+const FLAT_ROOF = /Olin Library|Mallinckrodt|Athletic|Field House|Recreation|Kemper|Steinberg|Weil|Givens|Bixby|Walker|Schnuck|Jubel|McKelvey|Garage|Parking|Bryan|Compton|Lopata Hall|Jolley|Urbauer|Laboratory|Radiochemistry|Life Sciences|Monsanto|McMillen|Millbrook|Facility|Welcome Center|Knight Center|Village East|Music Classroom|Gaylord/
+for (const building of buildings) building.roof = FLAT_ROOF.test(building.name) ? 'flat' : 'pitched'
+
+// OpenStreetMap has the campus trees but almost none in the neighbourhoods
+// around it. Fill those in so the surroundings do not look bare: street trees
+// along residential roads and one or two yard trees per house. These are
+// decoration, placed by a fixed-seed generator, not surveyed trees.
+{
+  let seed = 20261113
+  const next = () => {
+    seed = (seed + 0x6d2b79f5) >>> 0
+    let t = seed
+    t = Math.imul(t ^ (t >>> 15), t | 1)
+    t ^= t + Math.imul(t ^ (t >>> 7), t | 61)
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296
+  }
+  const footprints = [...context.map(item => item.poly), ...buildings.flatMap(building => building.parts.map(part => part.poly))].map(poly => {
+    const xs = poly.map(point => point[0])
+    const ys = poly.map(point => point[1])
+    return { poly, box: [Math.min(...xs) - 2, Math.min(...ys) - 2, Math.max(...xs) + 2, Math.max(...ys) + 2] }
+  })
+  const within = (point, poly) => {
+    let hit = false
+    for (let i = 0, j = poly.length - 1; i < poly.length; j = i++) {
+      const [xi, yi] = poly[i]
+      const [xj, yj] = poly[j]
+      if (yi > point[1] !== yj > point[1] && point[0] < ((xj - xi) * (point[1] - yi)) / (yj - yi) + xi) hit = !hit
+    }
+    return hit
+  }
+  const roads = paths.filter(path => path.k !== 'path' && path.k !== 'steps')
+  const nearRoad = (point, limit) => roads.some(path => {
+    for (let i = 0; i < path.p.length - 1; i++) {
+      const [x1, y1] = path.p[i]
+      const [x2, y2] = path.p[i + 1]
+      const dx = x2 - x1
+      const dy = y2 - y1
+      const t = Math.max(0, Math.min(1, ((point[0] - x1) * dx + (point[1] - y1) * dy) / (dx * dx + dy * dy || 1)))
+      if (Math.hypot(point[0] - x1 - t * dx, point[1] - y1 - t * dy) < limit) return true
+    }
+    return false
+  })
+  const hard = areas.filter(item => ['parking', 'plaza', 'pitch', 'track', 'pool', 'water', 'play'].includes(item.k)).map(item => item.p)
+  const taken = []
+  const free = (point, roadGap) =>
+    inBounds(point) &&
+    !footprints.some(item => point[0] > item.box[0] && point[0] < item.box[2] && point[1] > item.box[1] && point[1] < item.box[3] && within(point, item.poly)) &&
+    !hard.some(poly => within(point, poly)) &&
+    !nearRoad(point, roadGap) &&
+    !taken.some(other => Math.hypot(other[0] - point[0], other[1] - point[1]) < 6) &&
+    !trees.some(other => Math.hypot(other[0] - point[0], other[1] - point[1]) < 6)
+  const before = trees.length
+  for (const path of paths) {
+    if (path.k !== 'road') continue
+    for (let i = 0; i < path.p.length - 1; i++) {
+      const [x1, y1] = path.p[i]
+      const [x2, y2] = path.p[i + 1]
+      const length = Math.hypot(x2 - x1, y2 - y1)
+      if (length < 10) continue
+      const nx = -(y2 - y1) / length
+      const ny = (x2 - x1) / length
+      for (let d = 6 + next() * 6; d < length - 4; d += 12 + next() * 7) {
+        for (const side of [-1, 1]) {
+          if (next() < 0.2) continue
+          const point = [round(x1 + ((x2 - x1) * d) / length + nx * side * 7.6), round(y1 + ((y2 - y1) * d) / length + ny * side * 7.6)]
+          if (free(point, 5.5)) taken.push(point)
+        }
+      }
+    }
+  }
+  for (const item of context) {
+    const [cx, cy] = centroid(item.poly)
+    const reach = Math.sqrt(Math.abs(area(item.poly))) * 0.75 + 5
+    for (let count = next() < 0.55 ? 2 : 1; count > 0; count--) {
+      const angle = next() * Math.PI * 2
+      const point = [round(cx + Math.cos(angle) * reach), round(cy + Math.sin(angle) * reach)]
+      if (free(point, 6.5)) taken.push(point)
+    }
+  }
+  trees.push(...taken)
+  console.log(`${before} mapped trees, ${taken.length} added around the neighbourhood`)
 }
 
 const campus = {
@@ -382,7 +632,9 @@ const campus = {
   buildings,
   context,
   paths,
-  areas
+  areas,
+  trees: trees.filter(inBounds).flat(),
+  roadLabels
 }
 
 const styles = new Map()
@@ -403,7 +655,8 @@ await writeFile(
 )
 await writeFile(join(OUT, 'campus.json'), JSON.stringify(campus))
 
-console.log(`${classrooms.length} classrooms in ${roomsByBuilding.size} buildings (${extraCount} school-managed)`)
+console.log(`${classrooms.length} rooms in ${roomsByBuilding.size} buildings (${extraCount} from extra-rooms.json, ${listingCount} from archived course listings)`)
+console.log('listing buildings not on this map:', [...unknownLabels].sort((a, b) => b[1] - a[1]).map(([label, count]) => `${label} (${count})`).join(', '))
 console.log('labelled without rooms:', buildings.filter(b => b.rooms === 0 && !b.minor).map(b => b.name).join(' | '))
 console.log(`${buildings.length} named buildings, ${context.length} context buildings, ${paths.length} paths, ${areas.length} areas`)
 console.log('styles:', Object.fromEntries([...styles].sort((a, b) => b[1] - a[1])))

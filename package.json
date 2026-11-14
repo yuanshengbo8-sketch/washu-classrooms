@@ -13,7 +13,10 @@
     "data:osm": "node scripts/fetch-osm.mjs",
     "data:classrooms": "node scripts/fetch-classrooms.mjs",
     "data:courses": "node scripts/fetch-courses.mjs",
-    "data:build": "node scripts/build-data.mjs"
+    "data:build": "node scripts/build-data.mjs",
+    "data:archive": "node scripts/fetch-archive.mjs schools && node scripts/fetch-archive.mjs terms && node scripts/build-archive.mjs",
+    "data:study": "node scripts/fetch-study-rooms.mjs",
+    "data:availability": "node scripts/fetch-availability.mjs"
   },
   "dependencies": {
     "react": "^19.1.1",

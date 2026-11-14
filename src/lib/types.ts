@@ -31,6 +31,19 @@ export interface Room {
   url: string
   /** Set when a school, not the Registrar, schedules the room. Such rooms have no CTL details. */
   managedBy?: string
+  /** 'listings': known only from WashU's archived public course listings. */
+  source?: 'listings'
+  /** Largest enrolment cap of a class listed in the room. A lower bound on its size, not its capacity. */
+  largestClass?: number | null
+  /** Last year the archived listings show a class in the room. */
+  lastYear?: number
+  /** Archived section rows that met in the room. */
+  sections?: number
+}
+
+/** Seats to filter and sort by: the real capacity, or the largest class a room is known to have held. */
+export function roomSize (room: Room): number | null {
+  return room.capacity ?? room.largestClass ?? null
 }
 
 export interface ClassroomData {
@@ -65,6 +78,8 @@ export interface Building {
   minor?: boolean
   /** Footprint in square metres. */
   area: number
+  /** Roof form, for drawing. */
+  roof?: 'flat' | 'pitched'
   parts: BuildingPart[]
 }
 
@@ -73,8 +88,12 @@ export interface Campus {
   attribution: string
   buildings: Building[]
   context: { poly: Point[]; h: number }[]
-  paths: { k: 'path' | 'service' | 'road' | 'major'; p: Point[] }[]
-  areas: { k: 'grass' | 'pitch' | 'wood' | 'water' | 'parking'; p: Point[] }[]
+  paths: { k: 'path' | 'steps' | 'service' | 'road' | 'major' | 'rail'; p: Point[] }[]
+  areas: { k: string; s?: string; p: Point[] }[]
+  /** Tree positions as a flat x, y list. */
+  trees: number[]
+  /** Street names: text, road kind, position and angle (radians, counter-clockwise from east). */
+  roadLabels: { t: string; k: 'road' | 'major'; x: number; y: number; a: number }[]
 }
 
 export interface Section {
@@ -125,7 +144,7 @@ export function filtersActive (filters: Filters): boolean {
 }
 
 export function matchesFilters (room: Room, filters: Filters): boolean {
-  if ((room.capacity ?? 0) < filters.minCapacity) return false
+  if ((roomSize(room) ?? 0) < filters.minCapacity) return false
   if (filters.style && room.style !== filters.style) return false
   if (filters.accessible && !room.accessible) return false
   if (filters.tour && !room.tour) return false

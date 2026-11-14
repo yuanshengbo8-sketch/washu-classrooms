@@ -102,6 +102,7 @@ export function AboutModal ({ t, fetched, onClose }: { t: T; fetched: string; on
       <ul className='about-list'>
         <li>{t('aboutClassrooms')} <a href='https://ctl.wustl.edu/classrooms/' target='_blank' rel='noreferrer'>ctl.wustl.edu/classrooms</a></li>
         <li>{t('aboutCourses')} <a href='https://registrar.washu.edu/classes-registration/class-schedule-search/' target='_blank' rel='noreferrer'>registrar.washu.edu</a></li>
+        <li>{t('aboutStudy')} <a href='https://library.washu.edu/study-rooms/' target='_blank' rel='noreferrer'>library.washu.edu/study-rooms</a></li>
         <li>{t('aboutMap')} <a href='https://www.openstreetmap.org/copyright' target='_blank' rel='noreferrer'>openstreetmap.org/copyright</a></li>
         <li>{t('aboutFloors')}</li>
       </ul>

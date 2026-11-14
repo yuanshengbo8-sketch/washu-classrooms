@@ -13,6 +13,9 @@ interface TopBarProps {
   /** Null until the course list has loaded. */
   courses: Course[] | null
   finderOpen: boolean
+  studyOpen: boolean
+  /** Bookable study rooms free right now; 0 hides the badge. */
+  studyFree: number
   filterCount: number
   favoriteCount: number
   onNeedCourses: () => void
@@ -20,6 +23,7 @@ interface TopBarProps {
   onRoom: (room: Room) => void
   onCourse: (course: Course) => void
   onFinder: () => void
+  onStudy: () => void
   onFavorites: () => void
   onLang: () => void
   onAbout: () => void
@@ -120,7 +124,7 @@ export function TopBar (props: TopBarProps) {
                   <button key={room.id} type='button' className='search__item' onClick={() => pick(() => props.onRoom(room))}>
                     <span className='search__item-icon'><Icon name='seat' size={16} /></span>
                     <span className='search__item-main'>{room.buildingName} {room.room}</span>
-                    <span className='search__item-side'>{room.capacity ?? '—'} {t('seats')} · {term(lang, room.style)}</span>
+                    <span className='search__item-side'>{[room.capacity !== null ? `${room.capacity} ${t('seats')}` : room.largestClass ? `${room.largestClass}+ ${t('seats')}` : '', term(lang, room.style) || (room.source === 'listings' ? t('listedRoom') : '')].filter(Boolean).join(' · ')}</span>
                   </button>
                 ))}
               </div>
@@ -150,6 +154,11 @@ export function TopBar (props: TopBarProps) {
           <Icon name='filter' size={16} />
           <span>{t('findRoom')}</span>
           {props.filterCount > 0 ? <span className='pill__badge'>{props.filterCount}</span> : null}
+        </button>
+        <button type='button' className={props.studyOpen ? 'pill pill--on pill--study' : 'pill pill--study'} onClick={props.onStudy}>
+          <Icon name='desk' size={16} />
+          <span>{t('studyRooms')}</span>
+          {props.studyFree > 0 ? <span className='pill__badge pill__badge--green'>{props.studyFree}</span> : null}
         </button>
         <button type='button' className='pill' onClick={props.onFavorites}>
           <Icon name='star' size={16} />

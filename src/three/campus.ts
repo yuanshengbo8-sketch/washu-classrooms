@@ -5,25 +5,45 @@ import type { Building, BuildingPart, Campus, Point } from '../lib/types'
 import { floorLabel } from '../lib/types'
 
 const COLORS = {
-  sky: 0xeef0ea,
-  ground: 0xf4f1ea,
-  grass: 0xcfe3c0,
-  wood: 0xb4d3a4,
-  pitch: 0xc0dcaa,
-  water: 0xb5d6e8,
-  parking: 0xe9e6de,
-  path: 0xffffff,
-  service: 0xfcfaf5,
-  road: 0xffffff,
-  context: 0xebe7de,
-  stone: 0xd8ccba,
-  stoneDim: 0xe4ddd0,
-  school: 0xd9a79c,
-  schoolHover: 0xcf8f84,
-  red: 0xba0c2f,
-  redHover: 0xd8254a,
-  redDim: 0xdcb4bb,
+  sky: 0xe9eee6,
+  ground: 0xdce8cc,
+  grass: 0xbcdba2,
+  garden: 0xa5d08f,
+  scrub: 0x9cc887,
+  wood: 0x93c07f,
+  pitch: 0x9fd085,
+  tennis: 0x5d93b3,
+  court: 0xd29a6c,
+  track: 0xc9705a,
+  play: 0xead9ae,
+  water: 0x9fd0ea,
+  pool: 0x7ccbee,
+  parking: 0xb3b7ba,
+  plaza: 0xefe7d8,
+  path: 0xfbf8f0,
+  steps: 0xe4dccb,
+  service: 0xc9cbcc,
+  kerb: 0xe6e2d7,
+  road: 0x8d9196,
+  major: 0x767a80,
+  line: 0xf3d98b,
+  rail: 0x6f747a,
+  ballast: 0xcbc6ba,
+  context: 0xe9e3d6,
+  contextRoof: 0xb9aea1,
+  granite: 0xdcc3b4,
+  graniteDim: 0xebe3d8,
+  slate: 0x7f8d8a,
+  slateDim: 0xcdd3cf,
+  flatRoof: 0xd4d2cb,
+  school: 0xc99a8c,
+  schoolHover: 0xb9806f,
+  red: 0xa63a3c,
+  redHover: 0xc8273f,
+  redDim: 0xd9bcb9,
+  match: 0xba0c2f,
   green: 0x2c5234,
+  leaf: [0x5f9d57, 0x6fae5f, 0x4f8f52, 0x7db968, 0x5a9a63],
   floorEmpty: 0xf6f1e8,
   floorRooms: 0xc8324f
 }
@@ -37,11 +57,15 @@ export interface CampusCallbacks {
 
 interface BuildingEntry {
   building: Building
-  mesh: THREE.Mesh<THREE.BufferGeometry, THREE.MeshLambertMaterial>
-  edges: THREE.LineSegments | null
+  /** Walls, roof and rooftop units; hidden while the floor stack is shown. */
+  group: THREE.Group
+  walls: THREE.Mesh<THREE.BufferGeometry, THREE.MeshLambertMaterial>
+  roof: THREE.Mesh<THREE.BufferGeometry, THREE.MeshLambertMaterial>
   label: HTMLButtonElement | null
   labelSize: [number, number]
   radius: number
+  /** Height of the roof top, for placing the label. */
+  top: number
 }
 
 interface FloorEntry {
@@ -119,6 +143,196 @@ function ribbons (lines: Point[][], width: number, y: number): THREE.BufferGeome
   return geometry
 }
 
+/** Copies one draw group out of a non-indexed geometry. */
+function sliceGroup (geometry: THREE.BufferGeometry, group: { start: number; count: number }): THREE.BufferGeometry {
+  const out = new THREE.BufferGeometry()
+  for (const name of ['position', 'normal', 'uv']) {
+    const attribute = geometry.getAttribute(name) as THREE.BufferAttribute
+    const size = attribute.itemSize
+    out.setAttribute(name, new THREE.BufferAttribute((attribute.array as Float32Array).slice(group.start * size, (group.start + group.count) * size), size))
+  }
+  return out
+}
+
+function perimeter (points: Point[]): number {
+  let sum = 0
+  for (let i = 0; i < points.length; i++) {
+    const [x1, y1] = points[i]
+    const [x2, y2] = points[(i + 1) % points.length]
+    sum += Math.hypot(x2 - x1, y2 - y1)
+  }
+  return sum
+}
+
+function shoelace (points: Point[]): number {
+  let sum = 0
+  for (let i = 0; i < points.length; i++) {
+    const [x1, y1] = points[i]
+    const [x2, y2] = points[(i + 1) % points.length]
+    sum += x1 * y2 - x2 * y1
+  }
+  return Math.abs(sum / 2)
+}
+
+function inside (point: Point, polygon: Point[]): boolean {
+  let hit = false
+  for (let i = 0, j = polygon.length - 1; i < polygon.length; j = i++) {
+    const [xi, yi] = polygon[i]
+    const [xj, yj] = polygon[j]
+    if (yi > point[1] !== yj > point[1] && point[0] < ((xj - xi) * (point[1] - yi)) / (yj - yi) + xi) hit = !hit
+  }
+  return hit
+}
+
+/** Small deterministic generator, so the scenery is the same on every load. */
+function random (seed: number): () => number {
+  let state = seed >>> 0
+  return () => {
+    state = (state + 0x6d2b79f5) >>> 0
+    let t = state
+    t = Math.imul(t ^ (t >>> 15), t | 1)
+    t ^= t + Math.imul(t ^ (t >>> 7), t | 61)
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296
+  }
+}
+
+function hash (text: string): number {
+  let value = 2166136261
+  for (let i = 0; i < text.length; i++) value = Math.imul(value ^ text.charCodeAt(i), 16777619)
+  return value >>> 0
+}
+
+/** Drops vertices that sit within `tolerance` metres of the line between their neighbours. */
+function simplify (points: Point[], tolerance: number): Point[] {
+  const current = points.slice()
+  for (let changed = true; changed && current.length > 4;) {
+    changed = false
+    for (let i = 0; i < current.length && current.length > 4; i++) {
+      const count = current.length
+      const [ax, ay] = current[(i - 1 + count) % count]
+      const [bx, by] = current[i]
+      const [cx, cy] = current[(i + 1) % count]
+      const length = Math.hypot(cx - ax, cy - ay)
+      const distance = length < 0.01 ? Math.hypot(bx - ax, by - ay) : Math.abs((cx - ax) * (ay - by) - (ax - bx) * (cy - ay)) / length
+      if (distance < tolerance) {
+        // Drop this vertex and leave its neighbour alone for this pass.
+        current.splice(i, 1)
+        changed = true
+      }
+    }
+  }
+  return current
+}
+
+interface Shell {
+  walls: THREE.BufferGeometry
+  roof: THREE.BufferGeometry
+  /** How far the roof rises above the walls. */
+  rise: number
+}
+
+/**
+ * Walls and roof for a set of footprints. A pitched roof slopes in from every
+ * edge to a flat ridge, which reads as hipped or gabled from map distance; a
+ * flat roof is a thin slab with a chamfered edge.
+ */
+function shell (parts: BuildingPart[], height: number, roofKind: 'flat' | 'pitched'): Shell {
+  const walls: THREE.BufferGeometry[] = []
+  const roofs: THREE.BufferGeometry[] = []
+  let rise = 0
+  for (const part of parts) {
+    const shape = shapeOf(part)
+    const body = new THREE.ExtrudeGeometry(shape, { depth: height, bevelEnabled: false })
+    walls.push(sliceGroup(body, body.groups[1]))
+    body.dispose()
+    // Mean width of the footprint: twice its area over its perimeter.
+    const width = (2 * shoelace(part.poly)) / Math.max(perimeter(part.poly), 1)
+    const inset = roofKind === 'pitched' ? THREE.MathUtils.clamp(width * 0.46, 1.2, 6.5) : 0.7
+    const up = roofKind === 'pitched' ? Math.min(inset * 0.82, 5.2) : 0.55
+    const outline = roofKind === 'pitched' ? shapeOf({ poly: simplify(part.poly, 1.6), holes: part.holes }) : shape
+    const roof = new THREE.ExtrudeGeometry(outline, {
+      depth: 0.02,
+      bevelEnabled: true,
+      bevelThickness: up,
+      bevelSize: inset,
+      bevelOffset: -inset,
+      bevelSegments: 1
+    })
+    roof.translate(0, 0, height)
+    roofs.push(roof)
+    rise = Math.max(rise, up)
+  }
+  const wall = walls.length === 1 ? walls[0] : mergeGeometries(walls)
+  const roof = roofs.length === 1 ? roofs[0] : mergeGeometries(roofs)
+  wall.rotateX(-Math.PI / 2)
+  roof.rotateX(-Math.PI / 2)
+  roof.clearGroups()
+  return { walls: wall, roof, rise }
+}
+
+/** One storey of one bay: a pale wall with a darker window in it. */
+function windowImage (): HTMLCanvasElement {
+  const canvas = document.createElement('canvas')
+  canvas.width = 64
+  canvas.height = 64
+  const context = canvas.getContext('2d') as CanvasRenderingContext2D
+  context.fillStyle = '#ffffff'
+  context.fillRect(0, 0, 64, 64)
+  context.fillStyle = '#e9e4dc'
+  context.fillRect(0, 0, 64, 5)
+  context.fillStyle = '#8496a8'
+  context.fillRect(20, 16, 24, 32)
+  context.fillStyle = '#a9b8c6'
+  context.fillRect(20, 16, 24, 9)
+  context.fillStyle = '#f4f1ec'
+  context.fillRect(31, 16, 2, 32)
+  return canvas
+}
+
+/** A tiling ground texture. `paint` draws one tile; `width` and `depth` are its size in metres. */
+function tile (width: number, depth: number, size: [number, number], paint: (context: CanvasRenderingContext2D, w: number, h: number) => void): THREE.CanvasTexture {
+  const canvas = document.createElement('canvas')
+  canvas.width = size[0]
+  canvas.height = size[1]
+  paint(canvas.getContext('2d') as CanvasRenderingContext2D, size[0], size[1])
+  const texture = new THREE.CanvasTexture(canvas)
+  texture.colorSpace = THREE.SRGBColorSpace
+  texture.wrapS = THREE.RepeatWrapping
+  texture.wrapT = THREE.RepeatWrapping
+  texture.anisotropy = 8
+  // Flat shapes carry their position in metres as UVs.
+  texture.repeat.set(1 / width, 1 / depth)
+  return texture
+}
+
+function textPlane (text: string, height: number, color: string, outline: string): THREE.Mesh {
+  const canvas = document.createElement('canvas')
+  const context = canvas.getContext('2d') as CanvasRenderingContext2D
+  const font = '600 44px "Avenir Next", "Segoe UI", system-ui, sans-serif'
+  context.font = font
+  const label = text.toUpperCase().split('').join('\u200a')
+  const width = Math.ceil(context.measureText(label).width) + 24
+  canvas.width = width
+  canvas.height = 64
+  context.font = font
+  context.textBaseline = 'middle'
+  context.lineJoin = 'round'
+  context.lineWidth = 7
+  context.strokeStyle = outline
+  context.strokeText(label, 12, 34)
+  context.fillStyle = color
+  context.fillText(label, 12, 34)
+  const texture = new THREE.CanvasTexture(canvas)
+  texture.colorSpace = THREE.SRGBColorSpace
+  texture.anisotropy = 8
+  const mesh = new THREE.Mesh(
+    new THREE.PlaneGeometry((height * width) / 64, height),
+    new THREE.MeshBasicMaterial({ map: texture, transparent: true, depthWrite: false })
+  )
+  mesh.rotation.x = -Math.PI / 2
+  return mesh
+}
+
 export function shortName (name: string): string {
   return name
     .replace(/^Lucy and Stanley /, '')
@@ -151,6 +365,7 @@ export class CampusScene {
   private hoveredId: string | null = null
   private hoveredFloor: number | null = null
   private matches: Map<string, number> | null = null
+  private matchMode: 'rooms' | 'study' = 'rooms'
   private tween: Tween | null = null
   private dirty = true
   private frame = 0
@@ -214,8 +429,8 @@ export class CampusScene {
   // ---- construction --------------------------------------------------------
 
   private buildLights (): void {
-    this.scene.add(new THREE.HemisphereLight(0xffffff, 0xf1ece2, 2.0))
-    const sun = new THREE.DirectionalLight(0xfffaf0, 1.9)
+    this.scene.add(new THREE.HemisphereLight(0xffffff, 0xe9e4d6, 1.75))
+    const sun = new THREE.DirectionalLight(0xfff6e6, 2.3)
     // Low in the east-south-east, so shadows fall toward the viewer's left
     // instead of hiding behind the buildings.
     sun.position.set(880, 640, 330)
@@ -240,69 +455,202 @@ export class CampusScene {
     ground.receiveShadow = true
     this.scene.add(ground)
 
-    const addFlat = (geometry: THREE.BufferGeometry | null, color: number) => {
+    ground.material.depthWrite = false
+    ground.renderOrder = -100
+
+    // Everything on the ground is drawn in a fixed order without writing
+    // depth, so thin layers never flicker against each other from far away.
+    let order = -99
+    const addFlat = (geometry: THREE.BufferGeometry | null, color: number, map?: THREE.Texture) => {
       if (!geometry) return
-      const mesh = new THREE.Mesh(geometry, new THREE.MeshLambertMaterial({ color, side: THREE.DoubleSide }))
+      const mesh = new THREE.Mesh(geometry, new THREE.MeshLambertMaterial({ color: map ? 0xffffff : color, map, side: THREE.DoubleSide, depthWrite: false }))
       mesh.receiveShadow = true
+      mesh.renderOrder = order++
       this.scene.add(mesh)
     }
-    const areaLevels: Record<string, [number, number]> = {
-      parking: [COLORS.parking, 0.04],
-      grass: [COLORS.grass, 0.06],
-      pitch: [COLORS.pitch, 0.09],
-      wood: [COLORS.wood, 0.12],
-      water: [COLORS.water, 0.14]
+    const polygons = (kind: string, sport?: string) =>
+      campus.areas.filter(area => area.k === kind && (sport === undefined || (area.s ?? '') === sport)).map(area => area.p)
+    const lines = (kind: string) => campus.paths.filter(path => path.k === kind).map(path => path.p)
+
+    addFlat(flat(polygons('grass'), 0.02), COLORS.grass)
+    addFlat(flat(polygons('wood'), 0.03), COLORS.wood)
+    addFlat(flat(polygons('garden'), 0.04), COLORS.garden)
+    addFlat(flat(polygons('scrub'), 0.05), COLORS.scrub)
+    // Two rows of parking bays either side of an aisle.
+    const bays = tile(2.7, 17, [32, 128], (context, w, h) => {
+      context.fillStyle = '#b3b7ba'
+      context.fillRect(0, 0, w, h)
+      context.fillStyle = '#a4a8ac'
+      context.fillRect(0, h * 0.34, w, h * 0.32)
+      context.fillStyle = '#e9eaea'
+      context.fillRect(0, 0, 3, h * 0.34)
+      context.fillRect(0, h * 0.66, 3, h * 0.34)
+    })
+    // Square pavers.
+    const paving = tile(3.2, 3.2, [64, 64], (context, w, h) => {
+      context.fillStyle = '#efe7d8'
+      context.fillRect(0, 0, w, h)
+      context.fillStyle = '#e3dac8'
+      context.fillRect(0, 0, w, 2)
+      context.fillRect(0, 0, 2, h)
+    })
+    // Mowing stripes.
+    const turf = tile(14, 14, [64, 8], (context, w, h) => {
+      context.fillStyle = '#a3d389'
+      context.fillRect(0, 0, w, h)
+      context.fillStyle = '#95c97b'
+      context.fillRect(0, 0, w / 2, h)
+    })
+    addFlat(flat(polygons('parking'), 0.06), COLORS.parking, bays)
+    addFlat(flat(polygons('plaza'), 0.07), COLORS.plaza, paving)
+    addFlat(flat(polygons('play'), 0.08), COLORS.play)
+    addFlat(flat(polygons('track'), 0.09), COLORS.track)
+    addFlat(flat(polygons('pitch', ''), 0.1), COLORS.pitch, turf)
+    addFlat(flat(polygons('pitch', 'tennis'), 0.1), COLORS.tennis)
+    addFlat(flat(polygons('pitch', 'court'), 0.1), COLORS.court)
+    addFlat(flat(polygons('water'), 0.11), COLORS.water)
+    addFlat(flat(polygons('pool'), 0.11), COLORS.pool)
+    // White boundary lines on courts and fields.
+    addFlat(ribbons(campus.areas.filter(area => area.k === 'pitch').map(area => [...area.p, area.p[0]]), 0.5, 0.12), 0xffffff)
+
+    addFlat(ribbons(lines('rail'), 6.5, 0.13), COLORS.ballast)
+    addFlat(ribbons(lines('rail'), 2.2, 0.14), COLORS.rail)
+    addFlat(ribbons(lines('service'), 4.4, 0.15), COLORS.service)
+    addFlat(ribbons(lines('road'), 11, 0.16), COLORS.kerb)
+    addFlat(ribbons(lines('major'), 18, 0.16), COLORS.kerb)
+    addFlat(ribbons(lines('road'), 8, 0.17), COLORS.road)
+    addFlat(ribbons(lines('major'), 14, 0.18), COLORS.major)
+    addFlat(ribbons(lines('major'), 0.45, 0.19), COLORS.line)
+    addFlat(ribbons(lines('steps'), 2.6, 0.2), COLORS.steps)
+    addFlat(ribbons(lines('path'), 2.5, 0.21), COLORS.path)
+
+    for (const label of campus.roadLabels ?? []) {
+      const major = label.k === 'major'
+      const mesh = textPlane(label.t, major ? 10.5 : 6.2, '#ffffff', major ? '#5f6368' : '#74787d')
+      mesh.position.set(label.x, 0.3, -label.y)
+      mesh.rotation.z = label.a
+      mesh.renderOrder = -1
+      this.scene.add(mesh)
     }
-    for (const [kind, [color, y]] of Object.entries(areaLevels)) {
-      addFlat(flat(campus.areas.filter(area => area.k === kind).map(area => area.p), y), color)
+    this.buildTrees(campus)
+  }
+
+  private buildTrees (campus: Campus): void {
+    const next = random(20261113)
+    const spots: { x: number; y: number; size: number }[] = []
+    const list = campus.trees ?? []
+    for (let i = 0; i < list.length; i += 2) spots.push({ x: list[i], y: list[i + 1], size: 2.8 + next() * 2.5 })
+    // Shrub beds and woods are mapped as areas: fill them with smaller crowns.
+    for (const area of campus.areas) {
+      if (area.k !== 'scrub' && area.k !== 'wood') continue
+      const xs = area.p.map(point => point[0])
+      const ys = area.p.map(point => point[1])
+      const [minX, maxX, minY, maxY] = [Math.min(...xs), Math.max(...xs), Math.min(...ys), Math.max(...ys)]
+      const wood = area.k === 'wood'
+      const wanted = Math.min(Math.round(shoelace(area.p) / (wood ? 70 : 26)), wood ? 60 : 9)
+      for (let tries = 0, placed = 0; placed < wanted && tries < wanted * 6; tries++) {
+        const point: Point = [minX + next() * (maxX - minX), minY + next() * (maxY - minY)]
+        if (!inside(point, area.p)) continue
+        placed++
+        spots.push({ x: point[0], y: point[1], size: wood ? 3 + next() * 2 : 1 + next() * 0.9 })
+      }
     }
-    const pathLevels: Record<string, [number, number, number]> = {
-      service: [COLORS.service, 4.2, 0.18],
-      path: [COLORS.path, 2.6, 0.2],
-      road: [COLORS.road, 7.5, 0.22],
-      major: [COLORS.road, 13, 0.24]
+    if (spots.length === 0) return
+
+    // A crown of two faceted blobs on a short trunk, coloured per vertex.
+    const lower = new THREE.IcosahedronGeometry(1, 0)
+    lower.scale(1, 0.82, 1)
+    lower.translate(0, 1.25, 0)
+    const upper = new THREE.IcosahedronGeometry(0.66, 0)
+    upper.translate(0.22, 2, 0.12)
+    const trunk = new THREE.CylinderGeometry(0.09, 0.13, 0.7, 5).toNonIndexed()
+    trunk.translate(0, 0.35, 0)
+    const paint = (geometry: THREE.BufferGeometry, r: number, g: number, b: number) => {
+      const count = geometry.getAttribute('position').count
+      const colors = new Float32Array(count * 3)
+      for (let i = 0; i < count; i++) colors.set([r, g, b], i * 3)
+      geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3))
+      geometry.deleteAttribute('uv')
+      return geometry
     }
-    for (const [kind, [color, width, y]] of Object.entries(pathLevels)) {
-      addFlat(ribbons(campus.paths.filter(path => path.k === kind).map(path => path.p), width, y), color)
-    }
+    const tree = mergeGeometries([paint(lower, 1, 1, 1), paint(upper, 1.08, 1.08, 1.08), paint(trunk, 0.62, 0.42, 0.34)])
+    const material = new THREE.MeshLambertMaterial({ vertexColors: true, flatShading: true })
+    const mesh = new THREE.InstancedMesh(tree, material, spots.length)
+    const matrix = new THREE.Matrix4()
+    const rotation = new THREE.Quaternion()
+    const up = new THREE.Vector3(0, 1, 0)
+    const color = new THREE.Color()
+    spots.forEach((spot, index) => {
+      rotation.setFromAxisAngle(up, next() * Math.PI * 2)
+      const tall = spot.size * (0.9 + next() * 0.35)
+      matrix.compose(new THREE.Vector3(spot.x, 0, -spot.y), rotation, new THREE.Vector3(spot.size, tall, spot.size))
+      mesh.setMatrixAt(index, matrix)
+      color.setHex(COLORS.leaf[Math.floor(next() * COLORS.leaf.length)])
+      color.offsetHSL(0, 0, (next() - 0.5) * 0.06)
+      mesh.setColorAt(index, color)
+    })
+    mesh.castShadow = true
+    mesh.receiveShadow = true
+    this.scene.add(mesh)
   }
 
   private buildBuildings (campus: Campus): void {
-    if (campus.context.length) {
-      const pieces = campus.context.map(item => {
-        const geometry = new THREE.ExtrudeGeometry(shapeOf({ poly: item.poly }), { depth: item.h, bevelEnabled: false })
-        return geometry
-      })
-      const merged = mergeGeometries(pieces)
-      merged.rotateX(-Math.PI / 2)
-      const mesh = new THREE.Mesh(merged, new THREE.MeshLambertMaterial({ color: COLORS.context }))
-      mesh.castShadow = true
-      mesh.receiveShadow = true
-      this.scene.add(mesh)
+    const image = windowImage()
+    const windows = (storey: number, bay: number): THREE.CanvasTexture => {
+      const texture = new THREE.CanvasTexture(image)
+      texture.colorSpace = THREE.SRGBColorSpace
+      texture.wrapS = THREE.RepeatWrapping
+      texture.wrapT = THREE.RepeatWrapping
+      texture.anisotropy = 4
+      // Wall UVs are in metres: one texture tile per bay and per storey.
+      texture.repeat.set(1 / bay, 1 / storey)
+      texture.offset.set(0, -1 / storey)
+      return texture
     }
 
-    for (const building of campus.buildings) {
-      const geometry = extrude(building.parts, building.h)
-      const hasRooms = building.rooms > 0
-      const material = new THREE.MeshLambertMaterial({ color: this.baseColor(building) })
-      const mesh = new THREE.Mesh(geometry, material)
-      mesh.castShadow = true
-      mesh.receiveShadow = true
-      mesh.userData.id = building.id
-      this.scene.add(mesh)
-      this.pickable.push(mesh)
-
-      let edges: THREE.LineSegments | null = null
-      if (hasRooms) {
-        edges = new THREE.LineSegments(
-          new THREE.EdgesGeometry(geometry, 30),
-          new THREE.LineBasicMaterial({ color: 0x6d0519, transparent: true, opacity: 0.45 })
-        )
-        this.scene.add(edges)
+    if (campus.context.length) {
+      // Neighbouring houses and shops: plain walls, small pitched roofs.
+      const walls: THREE.BufferGeometry[] = []
+      const roofs: THREE.BufferGeometry[] = []
+      for (const item of campus.context) {
+        const small = shoelace(item.poly) < 420
+        const piece = shell([{ poly: item.poly }], item.h, small ? 'pitched' : 'flat')
+        walls.push(piece.walls)
+        roofs.push(piece.roof)
       }
+      const wallMesh = new THREE.Mesh(mergeGeometries(walls), new THREE.MeshLambertMaterial({ color: COLORS.context, map: windows(3.4, 4.2) }))
+      const roofMesh = new THREE.Mesh(mergeGeometries(roofs), new THREE.MeshLambertMaterial({ color: COLORS.contextRoof, flatShading: true }))
+      for (const mesh of [wallMesh, roofMesh]) {
+        mesh.castShadow = true
+        mesh.receiveShadow = true
+        this.scene.add(mesh)
+      }
+    }
 
-      geometry.computeBoundingSphere()
-      const radius = geometry.boundingSphere?.radius ?? 40
+    const unitMaterial = new THREE.MeshLambertMaterial({ color: 0xb9bcbb })
+    for (const building of campus.buildings) {
+      const hasRooms = building.rooms > 0
+      const roofKind = building.roof ?? 'pitched'
+      const piece = shell(building.parts, building.h, roofKind)
+      const storey = building.h / Math.max(building.levels, 1)
+      const walls = new THREE.Mesh(piece.walls, new THREE.MeshLambertMaterial({ color: COLORS.granite, map: windows(storey, 3.8) }))
+      const roof = new THREE.Mesh(piece.roof, new THREE.MeshLambertMaterial({ color: this.roofColor(building), flatShading: true }))
+      const group = new THREE.Group()
+      group.add(walls, roof)
+      for (const mesh of [walls, roof]) {
+        mesh.castShadow = true
+        mesh.receiveShadow = true
+        mesh.userData.id = building.id
+        this.pickable.push(mesh)
+      }
+      if (roofKind === 'flat') {
+        const units = this.rooftopUnits(building, unitMaterial)
+        if (units) group.add(units)
+      }
+      this.scene.add(group)
+
+      piece.walls.computeBoundingSphere()
+      const radius = piece.walls.boundingSphere?.radius ?? 40
 
       let label: HTMLButtonElement | null = null
       if (!building.minor) {
@@ -313,20 +661,48 @@ export class CampusScene {
         name.className = 'map-label__name'
         name.textContent = shortName(building.name)
         label.append(name)
-        if (hasRooms) {
-          const count = document.createElement('span')
-          count.className = 'map-label__count'
-          count.textContent = String(building.rooms)
-          label.append(count)
-        }
+        const count = document.createElement('span')
+        count.className = 'map-label__count'
+        count.textContent = hasRooms ? String(building.rooms) : ''
+        label.append(count)
         label.title = building.name
         label.addEventListener('click', () => this.callbacks.onSelect(building.id))
         label.addEventListener('pointerenter', () => this.setHovered(building.id))
         label.addEventListener('pointerleave', () => this.setHovered(null))
         this.labelLayer.appendChild(label)
       }
-      this.entries.set(building.id, { building, mesh, edges, label, labelSize: [0, 0], radius })
+      this.entries.set(building.id, { building, group, walls, roof, label, labelSize: [0, 0], radius, top: building.h + piece.rise })
     }
+  }
+
+  /** A few plant boxes on a flat roof, placed the same way on every load. */
+  private rooftopUnits (building: Building, material: THREE.Material): THREE.Mesh | null {
+    const part = building.parts[0]
+    if (building.area < 500) return null
+    const next = random(hash(building.id))
+    const xs = part.poly.map(point => point[0])
+    const ys = part.poly.map(point => point[1])
+    const [minX, maxX, minY, maxY] = [Math.min(...xs), Math.max(...xs), Math.min(...ys), Math.max(...ys)]
+    const wanted = THREE.MathUtils.clamp(Math.round(building.area / 900), 1, 5)
+    const boxes: THREE.BufferGeometry[] = []
+    for (let tries = 0; boxes.length < wanted && tries < 60; tries++) {
+      const w = 3 + next() * 6
+      const d = 3 + next() * 5
+      const x = minX + next() * (maxX - minX)
+      const y = minY + next() * (maxY - minY)
+      // Keep the whole box on the roof and out of any courtyard.
+      const corners: Point[] = [[x - w, y - d], [x + w, y - d], [x + w, y + d], [x - w, y + d], [x, y]]
+      if (!corners.every(corner => inside(corner, part.poly) && !(part.holes ?? []).some(hole => inside(corner, hole)))) continue
+      const tall = 1.4 + next() * 1.6
+      const box = new THREE.BoxGeometry(w, tall, d)
+      box.translate(x, building.h + 0.55 + tall / 2, -y)
+      boxes.push(box)
+    }
+    if (boxes.length === 0) return null
+    const mesh = new THREE.Mesh(mergeGeometries(boxes), material)
+    mesh.castShadow = true
+    mesh.receiveShadow = true
+    return mesh
   }
 
   private setHome (campus: Campus): void {
@@ -364,10 +740,14 @@ export class CampusScene {
     )
   }
 
-  /** Red: classrooms we have data for. Blush: a school runs its rooms and publishes no list. */
-  private baseColor (building: Building): number {
-    if (building.rooms > 0) return COLORS.red
-    return building.managedBy ? COLORS.school : COLORS.stone
+  /**
+   * Roof colour carries the meaning. Red: classrooms we have data for. Rose: a
+   * school runs its rooms and we know none. Slate or pale grey: everything else.
+   */
+  private roofColor (building: Building): number {
+    const base = building.rooms > 0 ? COLORS.red : building.managedBy ? COLORS.school : building.roof === 'flat' ? COLORS.flatRoof : COLORS.slate
+    const shift = ((hash(building.id) % 9) - 4) / 100
+    return new THREE.Color(base).offsetHSL(0, 0, shift * 0.8).getHex()
   }
 
   // ---- public API ----------------------------------------------------------
@@ -401,14 +781,21 @@ export class CampusScene {
     this.dirty = true
   }
 
-  /** Classroom counts per building under the current filters, or null for no filter. */
-  setMatches (matches: Map<string, number> | null): void {
+  /**
+   * Counts per building to show instead of the classroom totals, or null for
+   * none: matching classrooms under a filter ('rooms'), or study rooms ('study').
+   */
+  setMatches (matches: Map<string, number> | null, mode: 'rooms' | 'study' = 'rooms'): void {
     this.matches = matches
+    this.matchMode = matches ? mode : 'rooms'
     for (const entry of this.entries.values()) {
       if (!entry.label) continue
       const count = matches ? matches.get(entry.building.id) ?? 0 : entry.building.rooms
+      const plain = this.isPlain(entry.building)
       const badge = entry.label.querySelector('.map-label__count')
-      if (badge) badge.textContent = String(count)
+      if (badge) badge.textContent = plain ? '' : String(count)
+      entry.label.classList.toggle('map-label--plain', plain)
+      entry.label.classList.toggle('map-label--study', this.matchMode === 'study' && !plain)
       entry.labelSize = [0, 0]
     }
     this.applyColors()
@@ -475,8 +862,7 @@ export class CampusScene {
     })
     this.updateFloorCounts(roomsByFloor)
     this.scene.add(this.stack)
-    entry.mesh.visible = false
-    if (entry.edges) entry.edges.visible = false
+    entry.group.visible = false
     this.explode = 0
     this.explodeStart = performance.now()
     this.layoutStack()
@@ -518,10 +904,7 @@ export class CampusScene {
     this.floors = []
     this.hoveredFloor = null
     const previous = this.selectedId ? this.entries.get(this.selectedId) : undefined
-    if (previous) {
-      previous.mesh.visible = true
-      if (previous.edges) previous.edges.visible = true
-    }
+    if (previous) previous.group.visible = true
   }
 
   private layoutStack (): void {
@@ -561,19 +944,26 @@ export class CampusScene {
     this.dirty = true
   }
 
+  /** A building with nothing to count in the current mode gets a small grey label. */
+  private isPlain (building: Building): boolean {
+    if (this.matchMode === 'study') return (this.matches?.get(building.id) ?? 0) === 0
+    return building.rooms === 0
+  }
+
   private applyColors (): void {
     for (const entry of this.entries.values()) {
-      const { building, mesh, label } = entry
+      const { building, label } = entry
       const hasRooms = building.rooms > 0
-      const filteredOut = hasRooms && this.matches !== null && (this.matches.get(building.id) ?? 0) === 0
+      const study = this.matchMode === 'study'
+      const filteredOut = (hasRooms || study) && this.matches !== null && (this.matches.get(building.id) ?? 0) === 0
       const dim = filteredOut || (this.selectedId !== null && this.selectedId !== building.id)
-      let color = this.baseColor(building)
-      if (dim) color = hasRooms ? COLORS.redDim : COLORS.stoneDim
+      let color = study && !filteredOut ? COLORS.green : this.matches !== null && hasRooms && !filteredOut ? COLORS.match : this.roofColor(building)
+      if (dim) color = hasRooms && !study ? COLORS.redDim : COLORS.slateDim
       else if (this.hoveredId === building.id && !building.minor) {
-        color = hasRooms ? COLORS.redHover : building.managedBy ? COLORS.schoolHover : COLORS.stoneDim
+        color = study && !filteredOut ? 0x3d6e47 : hasRooms ? COLORS.redHover : building.managedBy ? COLORS.schoolHover : 0x9fb0ab
       }
-      mesh.material.color.setHex(color)
-      if (entry.edges) (entry.edges.material as THREE.LineBasicMaterial).opacity = dim ? 0.15 : 0.45
+      entry.roof.material.color.setHex(color)
+      entry.walls.material.color.setHex(dim ? COLORS.graniteDim : COLORS.granite)
       if (label) {
         label.classList.toggle('map-label--dim', dim)
         label.classList.toggle('map-label--none', filteredOut)
@@ -612,7 +1002,7 @@ export class CampusScene {
       -((event.clientY - rect.top) / rect.height) * 2 + 1
     )
     this.raycaster.setFromCamera(pointer, this.camera)
-    const hits = this.raycaster.intersectObjects(this.pickable.filter(object => object.visible), false)
+    const hits = this.raycaster.intersectObjects(this.pickable.filter(object => object.visible && object.parent?.visible !== false), false)
     return hits[0]?.object ?? null
   }
 
@@ -716,7 +1106,7 @@ export class CampusScene {
       const label = entry.label as HTMLButtonElement
       // Buildings without classroom data only get a label once the map is
       // close enough to have room for it, and never while a filter is on.
-      const plain = entry.building.rooms === 0
+      const plain = this.isPlain(entry.building)
       const tooFar = plain && (this.matches !== null || distance > (entry.building.managedBy ? 2400 : 1250))
       if (entry.building.id === this.selectedId || tooFar) {
         label.style.visibility = 'hidden'
@@ -724,7 +1114,7 @@ export class CampusScene {
       }
       if (entry.labelSize[0] === 0) entry.labelSize = [label.offsetWidth, label.offsetHeight]
       const [w, h] = entry.labelSize
-      const [x, y, visible] = this.project(entry.building.c[0], entry.building.h + 6, -entry.building.c[1])
+      const [x, y, visible] = this.project(entry.building.c[0], entry.top + 4, -entry.building.c[1])
       const left = x - w / 2
       const top = y - h - 4
       const onScreen = visible && x > -40 && x < this.width + 40 && y > 0 && y < this.height + 40
@@ -758,7 +1148,7 @@ export class CampusScene {
   private labelPriority (entry: BuildingEntry): number {
     const { building } = entry
     const hover = building.id === this.hoveredId ? 100000 : 0
-    if (building.rooms === 0) return hover + (building.managedBy ? 5000 : Math.min(building.area / 10, 4000))
+    if (this.isPlain(building)) return hover + (building.managedBy ? 5000 : Math.min(building.area / 10, 4000))
     const count = this.matches ? this.matches.get(building.id) ?? 0 : building.rooms
     return hover + 10000 + count
   }

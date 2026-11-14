@@ -1,10 +1,12 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import type { Building, Filters, Room } from '../lib/types'
-import { NO_FILTERS, filtersActive, floorLabel, matchesFilters } from '../lib/types'
+import { NO_FILTERS, filtersActive, floorLabel, matchesFilters, roomSize } from '../lib/types'
 import type { Lang, StringKey } from '../lib/i18n'
 import { term } from '../lib/i18n'
 import { directionsUrl, shareUrl } from '../lib/store'
 import { Icon } from './Icon'
+import type { Availability, StudyRoom } from '../lib/study'
+import { StudyCard } from './StudyPanel'
 import { REPO_URL } from './Modals'
 
 type T = (key: StringKey, vars?: Record<string, string | number>) => string
@@ -51,10 +53,14 @@ export function RoomCard ({ room, lang, t, showBuilding, favorite, onOpen, onHov
           <span className='room-card__number'>{room.room}</span>
           {favorite ? <span className='room-card__star'><Icon name='starFilled' size={14} /></span> : null}
         </span>
-        <span className='room-card__meta'>{[room.note, term(lang, room.style)].filter(Boolean).join(' · ') || room.managedBy || '—'}</span>
+        <span className='room-card__meta'>
+          {[room.note, term(lang, room.style)].filter(Boolean).join(' · ') || (room.source === 'listings' ? t('listedRoom') : room.managedBy) || '—'}
+        </span>
         <span className='room-card__tags'>
           {room.capacity !== null ? (
             <span className='tag tag--strong'><Icon name='people' size={13} />{room.capacity}</span>
+          ) : room.largestClass ? (
+            <span className='tag' title={t('atLeastSeats', { n: room.largestClass })}><Icon name='people' size={13} />{room.largestClass}+</span>
           ) : null}
           {room.accessible ? <span className='tag' title={t('accessible')}><Icon name='wheelchair' size={13} /></span> : null}
           {room.tour ? <span className='tag' title={t('hasTour')}>360°</span> : null}
@@ -97,7 +103,7 @@ export function FinderPanel ({ rooms, lang, t, filters, favorites, favoritesOnly
     if (sort === 'building') return list.sort(compareRooms)
     const direction = sort === 'small' ? 1 : -1
     // Rooms with no published seat count go last either way.
-    const size = (room: Room) => room.capacity ?? (sort === 'small' ? Infinity : -1)
+    const size = (room: Room) => roomSize(room) ?? (sort === 'small' ? Infinity : -1)
     return list.sort((a, b) => (size(a) === size(b) ? 0 : direction * (size(a) - size(b))) || compareRooms(a, b))
   }, [rooms, filters, favoritesOnly, favorites, sort])
   const active = filtersActive(filters) || favoritesOnly
@@ -192,6 +198,8 @@ export function FinderPanel ({ rooms, lang, t, filters, favorites, favoritesOnly
 interface BuildingPanelProps {
   building: Building
   rooms: Room[]
+  studyRooms: StudyRoom[]
+  availability: Availability | null
   lang: Lang
   t: T
   filters: Filters
@@ -203,7 +211,8 @@ interface BuildingPanelProps {
   onClose: () => void
 }
 
-export function BuildingPanel ({ building, rooms, lang, t, filters, floor, favorites, onFloor, onHoverFloor, onOpen, onClose }: BuildingPanelProps) {
+export function BuildingPanel ({ building, rooms, studyRooms, availability, lang, t, filters, floor, favorites, onFloor, onHoverFloor, onOpen, onClose }: BuildingPanelProps) {
+  const [openStudy, setOpenStudy] = useState<string | null>(null)
   const floors = useMemo(() => [...new Set(rooms.map(room => room.floor))].sort((a, b) => a - b), [rooms])
   const shown = rooms.filter(room => floor === null || room.floor === floor).sort(compareRooms)
   const filtering = filtersActive(filters)
@@ -216,7 +225,7 @@ export function BuildingPanel ({ building, rooms, lang, t, filters, floor, favor
           <h2 className='panel__title panel__title--serif'>{building.name}</h2>
           <p className='panel__subtitle'>
             {building.rooms === 0
-              ? building.managedBy ?? t('noRoomsListed')
+              ? studyRooms.length > 0 ? t('studyRoomsCount', { n: studyRooms.length }) : building.managedBy ?? t('noRoomsListed')
               : [
                   `${building.rooms} ${building.rooms === 1 ? t('room') : t('rooms')}`,
                   building.seats > 0 ? `${building.seats} ${t('seatsTotal')}` : '',
@@ -232,13 +241,31 @@ export function BuildingPanel ({ building, rooms, lang, t, filters, floor, favor
             <Icon name='walk' size={16} />{t('directions')}
           </a>
         </div>
-        {building.managedBy || building.rooms === 0 ? (
+        {building.managedBy || (building.rooms === 0 && studyRooms.length === 0) || rooms.some(room => room.source === 'listings') ? (
           <div className='notice notice--plain'>
-            <p>{building.managedBy ? t('schoolManaged', { school: building.managedBy }) : t('notPooled')}</p>
-            {building.managedBy && building.rooms > 0 ? <p>{t('partialList')}</p> : null}
+            {building.managedBy ? <p>{t('schoolManaged', { school: building.managedBy })}</p> : building.rooms === 0 && studyRooms.length === 0 ? <p>{t('notPooled')}</p> : null}
+            {rooms.some(room => room.source === 'listings') ? <p>{t('partialList')}</p> : null}
             {building.managedBy ? (
               <p><a href={`${REPO_URL}/blob/main/data/extra-rooms.json`} target='_blank' rel='noreferrer'>{t('knowRoom')}</a></p>
             ) : null}
+          </div>
+        ) : null}
+        {studyRooms.length > 0 ? (
+          <div className='floor-group'>
+            <h3 className='floor-group__title'>{t('studyHere')}</h3>
+            <div className='study-list'>
+              {studyRooms.map(item => (
+                <StudyCard
+                  key={item.id}
+                  room={item}
+                  availability={availability}
+                  t={t}
+                  open={openStudy === item.id}
+                  showLibrary={item.library !== building.name}
+                  onToggle={() => setOpenStudy(openStudy === item.id ? null : item.id)}
+                />
+              ))}
+            </div>
           </div>
         ) : null}
         {floors.length > 1 ? (
@@ -364,10 +391,17 @@ export function RoomDetail ({ room, building, lang, t, favorite, onFavorite, onS
           </div>
         ) : null}
 
-        {room.managedBy ? <p className='notice notice--plain notice--top'>{t('schoolRoom', { school: room.managedBy })}</p> : null}
+        {room.source === 'listings' ? (
+          <div className='notice notice--plain notice--top'>
+            <p>{t('listedNotice', { n: room.sections ?? 0, year: room.lastYear ?? '' })}</p>
+            {room.largestClass ? <p>{t('atLeastSeats', { n: room.largestClass })}</p> : null}
+          </div>
+        ) : room.managedBy ? (
+          <p className='notice notice--plain notice--top'>{t('schoolRoom', { school: room.managedBy })}</p>
+        ) : null}
         <div className='stats'>
           <div className='stat'>
-            <span className='stat__value'>{room.capacity ?? '—'}</span>
+            <span className='stat__value'>{room.capacity ?? (room.largestClass ? `${room.largestClass}+` : '—')}</span>
             <span className='stat__label'>{t('seats')}</span>
           </div>
           <div className='stat stat--wide'>
@@ -403,9 +437,11 @@ export function RoomDetail ({ room, building, lang, t, favorite, onFavorite, onS
               <Icon name='walk' size={16} />{t('directions')}
             </a>
           ) : null}
-          <a className='button button--ghost' href={room.url} target='_blank' rel='noreferrer'>
-            <Icon name='external' size={16} />{room.managedBy ? t('sourcePage') : t('ctlPage')}
-          </a>
+          {room.url ? (
+            <a className='button button--ghost' href={room.url} target='_blank' rel='noreferrer'>
+              <Icon name='external' size={16} />{room.managedBy ? t('sourcePage') : t('ctlPage')}
+            </a>
+          ) : null}
         </div>
 
         {room.equipment.length > 0 ? (

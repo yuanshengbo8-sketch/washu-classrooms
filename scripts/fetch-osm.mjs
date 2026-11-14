@@ -18,10 +18,14 @@ const query = `[out:json][timeout:90];
   way["building"](${box});
   relation["building"](${box});
   way["highway"](${box});
-  way["leisure"~"pitch|park|garden|track"](${box});
-  way["landuse"~"grass|forest|recreation_ground"](${box});
-  way["natural"~"wood|water|scrub"](${box});
-  way["amenity"="parking"](${box});
+  relation["highway"="pedestrian"](${box});
+  way["railway"~"light_rail|rail"](${box});
+  way["leisure"~"pitch|park|garden|track|swimming_pool|playground"](${box});
+  way["landuse"~"grass|forest|recreation_ground|flowerbed|meadow"](${box});
+  relation["landuse"~"grass|forest"](${box});
+  way["natural"~"wood|water|scrub|tree_row"](${box});
+  node["natural"="tree"](${box});
+  way["amenity"~"parking|fountain"](${box});
 );
 out body geom;`
 
@@ -43,7 +47,8 @@ for (let attempt = 0; attempt < MIRRORS.length * 2; attempt++) {
         'Content-Type': 'application/x-www-form-urlencoded',
         'User-Agent': 'washu-classrooms-explorer/0.1 (open-source student project)'
       },
-      body: `data=${encodeURIComponent(query)}`
+      body: `data=${encodeURIComponent(query)}`,
+      signal: AbortSignal.timeout(150000)
     })
     const text = await response.text()
     const data = JSON.parse(text)
