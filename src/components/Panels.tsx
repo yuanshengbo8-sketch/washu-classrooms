@@ -10,11 +10,21 @@ import { schoolName, schoolOf, schoolStyle } from '../lib/schools'
 import type { Availability, FloorPlans, StudyRoom } from '../lib/study'
 import { LibraryPlans, StudyCard } from './StudyPanel'
 import { REPO_URL } from './Modals'
+import type { ClassSchedule, ClassStatus } from '../lib/schedule'
+import { classStatus, dayLetter, inSession, meetingsOn } from '../lib/schedule'
+import { campusNow, clock } from '../lib/study'
+import { DAY_ORDER } from '../lib/search'
 
 type T = (key: StringKey, vars?: Record<string, string | number>) => string
 
 const CAPACITY_STEPS = [0, 20, 40, 80, 150]
 /** Equipment worth filtering on; the rest is near-universal or rare. */
+
+function classLabel (status: ClassStatus, t: T): string {
+  if (status.kind === 'busy') return t('classBusyUntil', { time: clock(status.until) })
+  if (status.kind === 'free') return status.until === null ? t('classFreeNow') : t('classFreeUntil', { time: clock(status.until) })
+  return ''
+}
 
 function compareRooms (a: Room, b: Room): number {
   return a.buildingName.localeCompare(b.buildingName) || a.floor - b.floor || a.room.localeCompare(b.room, 'en', { numeric: true })
@@ -28,11 +38,13 @@ interface RoomCardProps {
   t: T
   showBuilding: boolean
   favorite: boolean
+  /** Whether a class is in the room right now, where the campus has a class schedule. */
+  status?: ClassStatus
   onOpen: (room: Room) => void
   onHover?: (room: Room | null) => void
 }
 
-export function RoomCard ({ room, lang, t, showBuilding, favorite, onOpen, onHover }: RoomCardProps) {
+export function RoomCard ({ room, lang, t, showBuilding, favorite, status, onOpen, onHover }: RoomCardProps) {
   return (
     <button
       type='button'
@@ -63,6 +75,7 @@ export function RoomCard ({ room, lang, t, showBuilding, favorite, onOpen, onHov
           ) : room.largestClass ? (
             <span className='tag' title={t('atLeastSeats', { n: room.largestClass })}><Icon name='people' size={13} />{room.largestClass}+</span>
           ) : null}
+          {status && status.kind !== 'unknown' ? <span className={`tag tag--${status.kind}`}>{classLabel(status, t)}</span> : null}
           {room.accessible ? <span className='tag' title={t('accessible')}><Icon name='wheelchair' size={13} /></span> : null}
           {room.tour ? <span className='tag' title={t('hasTour')}>360°</span> : null}
           {!room.thumb && room.photos.length > 0 ? <span className='tag'>{t('photoCount', { n: room.photos.length })}</span> : null}
@@ -81,6 +94,9 @@ interface FinderProps {
   filters: Filters
   favorites: Set<string>
   favoritesOnly: boolean
+  schedule: ClassSchedule | null
+  /** Rooms with no class right now; null when the schedule cannot say. */
+  free: Set<string> | null
   onFilters: (filters: Filters) => void
   onFavoritesOnly: (value: boolean) => void
   onOpen: (room: Room) => void
@@ -89,7 +105,7 @@ interface FinderProps {
 
 type Sort = 'small' | 'large' | 'building'
 
-export function FinderPanel ({ rooms, lang, t, filters, favorites, favoritesOnly, onFilters, onFavoritesOnly, onOpen, onClose }: FinderProps) {
+export function FinderPanel ({ rooms, lang, t, filters, favorites, favoritesOnly, schedule, free, onFilters, onFavoritesOnly, onOpen, onClose }: FinderProps) {
   const [sort, setSort] = useState<Sort>('small')
   const styles = useMemo(() => {
     const counts = new Map<string, number>()
@@ -101,13 +117,13 @@ export function FinderPanel ({ rooms, lang, t, filters, favorites, favoritesOnly
     [rooms]
   )
   const results = useMemo(() => {
-    const list = rooms.filter(room => matchesFilters(room, filters) && (!favoritesOnly || favorites.has(room.id)))
+    const list = rooms.filter(room => matchesFilters(room, filters, free) && (!favoritesOnly || favorites.has(room.id)))
     if (sort === 'building') return list.sort(compareRooms)
     const direction = sort === 'small' ? 1 : -1
     // Rooms with no published seat count go last either way.
     const size = (room: Room) => roomSize(room) ?? (sort === 'small' ? Infinity : -1)
     return list.sort((a, b) => (size(a) === size(b) ? 0 : direction * (size(a) - size(b))) || compareRooms(a, b))
-  }, [rooms, filters, favoritesOnly, favorites, sort])
+  }, [rooms, filters, free, favoritesOnly, favorites, sort])
   const active = filtersActive(filters) || favoritesOnly
 
   const toggleEquipment = (item: string) =>
@@ -151,6 +167,11 @@ export function FinderPanel ({ rooms, lang, t, filters, favorites, favoritesOnly
           <div className='filters__group'>
             <span className='filters__label'>{t('features')}</span>
             <div className='chips'>
+              {free ? (
+                <button type='button' className={filters.freeNow ? 'chip chip--on' : 'chip'} onClick={() => onFilters({ ...filters, freeNow: !filters.freeNow })}>
+                  {t('classFreeNow')}
+                </button>
+              ) : null}
               {/* A chip only makes sense when the directory records the feature at all. */}
               {rooms.some(room => room.accessible) ? (
                 <button type='button' className={filters.accessible ? 'chip chip--on' : 'chip'} onClick={() => onFilters({ ...filters, accessible: !filters.accessible })}>
@@ -191,7 +212,7 @@ export function FinderPanel ({ rooms, lang, t, filters, favorites, favoritesOnly
         ) : (
           <div className='room-list'>
             {results.map(room => (
-              <RoomCard key={room.id} room={room} lang={lang} t={t} showBuilding favorite={favorites.has(room.id)} onOpen={onOpen} />
+              <RoomCard key={room.id} room={room} lang={lang} t={t} showBuilding favorite={favorites.has(room.id)} status={classStatus(schedule, room.id)} onOpen={onOpen} />
             ))}
           </div>
         )}
@@ -208,6 +229,8 @@ interface BuildingPanelProps {
   studyRooms: StudyRoom[]
   availability: Availability | null
   plans: Record<string, FloorPlans>
+  schedule: ClassSchedule | null
+  free: Set<string> | null
   lang: Lang
   t: T
   filters: Filters
@@ -219,7 +242,7 @@ interface BuildingPanelProps {
   onClose: () => void
 }
 
-export function BuildingPanel ({ building, rooms, studyRooms, availability, plans, lang, t, filters, floor, favorites, onFloor, onHoverFloor, onOpen, onClose }: BuildingPanelProps) {
+export function BuildingPanel ({ building, rooms, studyRooms, availability, plans, schedule, free, lang, t, filters, floor, favorites, onFloor, onHoverFloor, onOpen, onClose }: BuildingPanelProps) {
   const [openStudy, setOpenStudy] = useState<string | null>(null)
   const floors = useMemo(() => [...new Set(rooms.map(room => room.floor))].sort((a, b) => a - b), [rooms])
   const shown = rooms.filter(room => floor === null || room.floor === floor).sort(compareRooms)
@@ -339,13 +362,14 @@ export function BuildingPanel ({ building, rooms, studyRooms, availability, plan
               <h3 className='floor-group__title'>{floorName(value)}</h3>
               <div className='room-list'>
                 {onFloorRooms.map(room => (
-                  <div key={room.id} className={filtering && !matchesFilters(room, filters) ? 'room-list__item room-list__item--muted' : 'room-list__item'}>
+                  <div key={room.id} className={filtering && !matchesFilters(room, filters, free) ? 'room-list__item room-list__item--muted' : 'room-list__item'}>
                     <RoomCard
                       room={room}
                       lang={lang}
                       t={t}
                       showBuilding={false}
                       favorite={favorites.has(room.id)}
+                      status={classStatus(schedule, room.id)}
                       onOpen={onOpen}
                       onHover={hovered => onHoverFloor(hovered ? hovered.floor : null)}
                     />
@@ -360,11 +384,83 @@ export function BuildingPanel ({ building, rooms, studyRooms, availability, plan
   )
 }
 
+// ---- class schedule --------------------------------------------------------
+
+/** The week's classes in one room: a bar per day, and today's classes spelled out. */
+function RoomSchedule ({ roomId, schedule, t }: { roomId: string; schedule: ClassSchedule; t: T }) {
+  const meetings = schedule.rooms[roomId]
+  if (!meetings) return null
+  const { date, minutes } = campusNow()
+  const session = inSession(schedule, date)
+  const status = classStatus(schedule, roomId)
+  const today = dayLetter(date)
+  const dayNames = t('days').split(',')
+  const letters = [...DAY_ORDER].filter(letter => 'MTWRF'.includes(letter) || meetings.some(meeting => meeting[0].includes(letter)))
+  const from = Math.min(8 * 60, ...meetings.map(meeting => meeting[1]))
+  const to = Math.max(21 * 60, ...meetings.map(meeting => meeting[2]))
+  const at = (value: number) => `${((value - from) / (to - from)) * 100}%`
+  const hours: number[] = []
+  for (let hour = Math.ceil(from / 60); hour * 60 <= to; hour += 2) hours.push(hour)
+  const todays = session ? meetingsOn(schedule, roomId, today) : []
+
+  return (
+    <>
+      <h3 className='section-title'>{t('classSchedule')} · {schedule.term}</h3>
+      {status.kind === 'unknown' ? (
+        <p className='week__note'>{t('classOff')}</p>
+      ) : (
+        <p className={`week__status week__status--${status.kind}`}>
+          {status.kind === 'free' && status.until === null ? t('classFreeRest') : classLabel(status, t)}
+          {status.kind === 'busy' && status.section ? ` · ${status.section}` : ''}
+        </p>
+      )}
+      <div className='week'>
+        {letters.map(letter => (
+          <div key={letter} className={session && letter === today ? 'week__row week__row--today' : 'week__row'}>
+            <span className='week__day'>{dayNames[DAY_ORDER.indexOf(letter)]}</span>
+            <span className='week__bar'>
+              {meetingsOn(schedule, roomId, letter).map(meeting => (
+                <span
+                  key={`${meeting[1]}-${meeting[3] ?? ''}`}
+                  className='week__busy'
+                  style={{ left: at(meeting[1]), width: `${((meeting[2] - meeting[1]) / (to - from)) * 100}%` }}
+                  title={`${clock(meeting[1])} – ${clock(meeting[2])}${meeting[3] ? ` · ${meeting[3]}` : ''}`}
+                />
+              ))}
+              {session && letter === today && minutes >= from && minutes <= to ? <span className='week__now' style={{ left: at(minutes) }} /> : null}
+            </span>
+          </div>
+        ))}
+        <div className='week__row week__row--hours'>
+          <span className='week__day' />
+          <span className='week__hours'>
+            {hours.map(hour => <span key={hour} style={{ left: at(hour * 60) }}>{clock(hour * 60).replace(' ', '')}</span>)}
+          </span>
+        </div>
+      </div>
+      {session ? (
+        <dl className='facts'>
+          <div className='facts__row'>
+            <dt>{t('today')}</dt>
+            <dd>
+              {todays.length === 0
+                ? t('classNone')
+                : todays.map(meeting => `${clock(meeting[1])} – ${clock(meeting[2])}${meeting[3] ? ` (${meeting[3]})` : ''}`).join(', ')}
+            </dd>
+          </div>
+        </dl>
+      ) : null}
+      <p className='week__note'>{t('classNote', { term: schedule.term, date: schedule.fetched })}</p>
+    </>
+  )
+}
+
 // ---- room detail -----------------------------------------------------------
 
 interface RoomDetailProps {
   room: Room
   building: Building | undefined
+  schedule: ClassSchedule | null
   lang: Lang
   t: T
   favorite: boolean
@@ -374,7 +470,7 @@ interface RoomDetailProps {
   onClose: () => void
 }
 
-export function RoomDetail ({ room, building, lang, t, favorite, onFavorite, onSeatView, onBack, onClose }: RoomDetailProps) {
+export function RoomDetail ({ room, building, schedule, lang, t, favorite, onFavorite, onSeatView, onBack, onClose }: RoomDetailProps) {
   const [photo, setPhoto] = useState(0)
   const [copied, setCopied] = useState(false)
   const scroller = useRef<HTMLDivElement>(null)
@@ -487,6 +583,8 @@ export function RoomDetail ({ room, building, lang, t, favorite, onFavorite, onS
             </a>
           ) : null}
         </div>
+
+        {schedule ? <RoomSchedule roomId={room.id} schedule={schedule} t={t} /> : null}
 
         {room.equipment.length > 0 ? (
           <>

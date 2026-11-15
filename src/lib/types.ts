@@ -139,15 +139,19 @@ export interface Filters {
   tour: boolean
   /** Equipment names that must all be present. */
   equipment: string[]
+  /** Only rooms with no class right now. */
+  freeNow: boolean
 }
 
-export const NO_FILTERS: Filters = { minCapacity: 0, style: '', accessible: false, tour: false, equipment: [] }
+export const NO_FILTERS: Filters = { minCapacity: 0, style: '', accessible: false, tour: false, equipment: [], freeNow: false }
 
 export function filtersActive (filters: Filters): boolean {
-  return filters.minCapacity > 0 || filters.style !== '' || filters.accessible || filters.tour || filters.equipment.length > 0
+  return filters.minCapacity > 0 || filters.style !== '' || filters.accessible || filters.tour || filters.freeNow || filters.equipment.length > 0
 }
 
-export function matchesFilters (room: Room, filters: Filters): boolean {
+/** `free` holds the rooms with no class right now; null when that is not known, and the filter is then ignored. */
+export function matchesFilters (room: Room, filters: Filters, free: Set<string> | null = null): boolean {
+  if (filters.freeNow && free && !free.has(room.id)) return false
   if ((roomSize(room) ?? 0) < filters.minCapacity) return false
   if (filters.style && room.style !== filters.style) return false
   if (filters.accessible && !room.accessible) return false

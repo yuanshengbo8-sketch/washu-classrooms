@@ -75,7 +75,7 @@ export function formatClock (minutes: number): string {
   return `${display}:${String(minute).padStart(2, '0')}${suffix}`
 }
 
-const DAY_ORDER = 'MTWRFSU'
+export const DAY_ORDER = 'MTWRFSU'
 
 export function formatMeeting (section: Section, dayNames: string[], tba: string): string {
   if (!section.days || section.start === null || section.end === null) return tba

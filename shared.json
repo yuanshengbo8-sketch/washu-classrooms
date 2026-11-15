@@ -11,6 +11,7 @@
     "src/styles.css",
     "src/lib/config.ts",
     "src/lib/i18n.ts",
+    "src/lib/schedule.ts",
     "src/lib/search.ts",
     "src/lib/store.ts",
     "src/lib/study.ts",

@@ -15,6 +15,7 @@
     "data:courses": "node scripts/fetch-courses.mjs",
     "data:build": "node scripts/build-data.mjs",
     "data:archive": "node scripts/fetch-archive.mjs schools && node scripts/fetch-archive.mjs terms && node scripts/build-archive.mjs",
+    "data:schedule": "node scripts/build-schedule.mjs",
     "data:study": "node scripts/fetch-study-rooms.mjs",
     "data:availability": "node scripts/fetch-availability.mjs"
   },

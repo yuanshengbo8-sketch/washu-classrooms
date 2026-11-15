@@ -31,6 +31,7 @@ export type CampusStringKey =
   | 'aboutCourses'
   | 'aboutStudy'
   | 'aboutFloors'
+  | 'aboutSchedule'
   | 'aboutCredit'
   | 'studySource'
 
@@ -48,6 +49,8 @@ export interface CampusConfig {
   repoUrl: string
   /** Where the scheduled job publishes study-room bookings; '' when the site has none. */
   liveAvailabilityUrl: string
+  /** Whether data/schedule.json lists this term's class meetings by room. */
+  classSchedule: boolean
   /** Map labels for buildings whose full name is too long: building name -> label. */
   labelNames: Record<string, string>
   /** Equipment worth a filter chip in the room finder, as it is spelled in the data. */

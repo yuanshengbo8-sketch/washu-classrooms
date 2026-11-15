@@ -109,6 +109,7 @@ export function AboutModal ({ t, fetched, onClose }: { t: T; fetched: string; on
           <li>{t('aboutStudy')} <a href={CAMPUS.sources.study.url} target='_blank' rel='noreferrer'>{CAMPUS.sources.study.label}</a></li>
         ) : null}
         <li>{t('aboutMap')} <a href='https://www.openstreetmap.org/copyright' target='_blank' rel='noreferrer'>openstreetmap.org/copyright</a></li>
+        {CAMPUS.classSchedule ? <li>{t('aboutSchedule')}</li> : null}
         <li>{t('aboutFloors')}</li>
       </ul>
       <p>{t('aboutCredit')} <a href='https://github.com/zhenzhenfufu/ucsd-classrooms' target='_blank' rel='noreferrer'>zhenzhenfufu/ucsd-classrooms</a></p>

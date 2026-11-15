@@ -11,6 +11,7 @@ This is an unofficial student project. It is not affiliated with or endorsed by 
 ## What it does
 
 - **Study rooms with live bookings.** The 34 study spaces WashU Libraries list, in Olin Library and the business, art and East Asian libraries. The ones that can be booked show whether they are free right now and until when, a strip of today's and tomorrow's bookings, and a button to the room's LibCal booking page. The rest are marked walk-in, graduate-only and so on. Olin Library’s rooms are pinned on the floor plans the Libraries publish for its five levels. Buildings that have study rooms but no classrooms have green roofs.
+- **Which classrooms have no class right now.** For 283 classrooms the site knows this term's weekly class meetings. A room's page shows the week as bars and says whether a class is in it now and until when; room lists carry the same label, and "No class now" is a filter in Find a room. It shows when a room is in use, not which course is using it.
 - **3D campus map.** The whole Danforth Campus is drawn from OpenStreetMap: buildings with roofs and window bays, the 1,600 mapped campus trees, lawns, plazas, courts, parking and named streets. Buildings with classrooms have red roofs and a label with their room count. Drag to move, scroll to zoom, right-drag to rotate.
 - **Floor stack.** Selecting a building splits it into floors. Floors with classrooms are red and show a count; clicking a floor filters the room list. Floors come from room numbers, so no room is placed at a made-up position.
 - **Rooms beyond the CTL directory.** Schools such as Olin, Law, Sam Fox and McKelvey schedule their own classrooms, so the CTL directory leaves them out (Simon Hall's first floor, Bauer, Anheuser-Busch, Urbauer, Bixby and others). Those rooms are added from WashU's old public Course Listings as archived by the Internet Archive: about 350 rooms in 51 buildings in all. They have no photos; the page says where each one comes from and how recently a class met there.
@@ -24,14 +25,14 @@ This is an unofficial student project. It is not affiliated with or endorsed by 
 
 ## What it cannot do yet
 
-The reference project this is modelled on shows which classrooms are free right now. This one does that for library study rooms only, because WashU no longer publishes which room a course section meets in:
+WashU does not publish which room a course section meets in:
 
 - The Registrar's public [Class Schedule Search](https://registrar.washu.edu/classes-registration/class-schedule-search/) lists day, time, instructor and enrollment, with no location.
 - Room assignments live in Workday and in the reservation system at reserve.wustl.edu, both behind WashU Key login.
 
 - The old public Course Listings did give rooms, which is where the extra rooms here come from, but they stopped in 2025 and the archive holds only part of each term. That is enough to know a room exists, not to say it is free.
 
-So course search here shows times and instructors only. If WashU publishes locations, or a student exports their own Workday data and chooses to share it, classroom schedules and a "free now" view can be added on top of the existing data.
+So the classroom schedule here comes from a signed-in student reading Workday's Find Course Sections report (see [Data and accuracy](#data-and-accuracy)), and only the times a room is in use are published. Course search still shows times and instructors without rooms. The schedule has classes only: exams, review sessions, events and one-off bookings are missing, and a room with no class may be locked. About 20 rooms that hold a few classes this term are not on the site yet.
 
 Olin Business School's group study rooms are booked at reserve.wustl.edu behind WashU Key, so the site links to that page and does not show their bookings.
 
@@ -63,10 +64,13 @@ npm run data:osm                 # OpenStreetMap buildings, paths, trees and gre
 npm run data:archive             # archived Course Listings from the Internet Archive (over an hour), then data/listing-rooms.json
 npm run data:study               # library study rooms and their LibCal booking pages
 npm run data:build               # writes classrooms.json and campus.json
+npm run data:schedule            # writes schedule.json from data/raw/workday/sections.json (see below)
 
 npm run data:courses -- "2026 Fall"     # writes courses-2026F.json
 npm run data:courses -- "2027 Spring"   # writes courses-2027S.json
 ```
+
+`data:schedule` needs a list of this term's sections with their rooms, which only Workday has. A signed-in student opens the Find Course Sections report, filters it to the term and the Danforth Campus, and saves the rows as `data/raw/workday/sections.json` in the shape described at the top of [`scripts/build-schedule.mjs`](scripts/build-schedule.mjs). That file stays out of the repository. Term dates and no-class days are set in the same script.
 
 To add a term, run `data:courses` for it and add it to `TERMS` in `src/App.tsx`.
 
@@ -105,6 +109,7 @@ node scripts/sync-shared.mjs ../ucd-classrooms --check   # only list differences
 - **Classrooms:** the [CTL Classroom Directory](https://ctl.wustl.edu/classrooms/), 129 rooms in 31 buildings. It covers the pooled classrooms the Registrar schedules. Photos, seating charts and 360° tours are linked from ctl.wustl.edu and remain WashU's.
 - **Other rooms:** WashU's public Course Listings (courses.wustl.edu and acadinfo.wustl.edu/CourseListings, retired in 2025), read from the [Internet Archive](https://web.archive.org/). A room is added when at least two archived class sections met in it. The seat figure shown for these rooms is the largest class listed there, a lower bound rather than the capacity. `data/listing-rooms.json` is the condensed list; `data/extra-rooms.json` holds a few rooms added by hand.
 - **Study rooms:** [WashU Libraries' study room directory](https://library.washu.edu/study-rooms/) and the Libraries' public [LibCal](https://wustl.libcal.com/allspaces) booking pages. Bookings are a copy up to 20 minutes old; LibCal is the authority, and booking happens there. The Olin Library floor plans are the Libraries’ own images, loaded from library.washu.edu (or the Internet Archive’s copy when that is slow); `data/study-room-spots.json` records where each room’s label sits on them, read off by hand.
+- **Class schedule by room:** Workday's Find Course Sections report for Fall 2026 on the Danforth Campus, read by a signed-in student on 2026-11-15. WashU shows room assignments only to signed-in members of the university, so `schedule.json` keeps just room, days and times, with no course or instructor. It is a snapshot: later room changes are not picked up, and no-class days follow the Registrar's academic calendar.
 - **Courses:** the Registrar's public Class Schedule Search. It says it refreshes every 48 hours and is not meant for real-time accuracy; the copy here is a snapshot from the date in each file.
 - **Building photos:** exterior photos for 15 buildings come from [Wikimedia Commons](https://commons.wikimedia.org/) under the licence shown with each one; they are loaded from Commons, not copied. `data/building-photos.json` lists them, each checked by eye. Every building also links to Google Street View.
 - **Map:** © [OpenStreetMap](https://www.openstreetmap.org/copyright) contributors, ODbL. Trees on campus are the ones mapped there; the trees in the surrounding neighbourhoods, the roof shapes and the windows are generated for looks.

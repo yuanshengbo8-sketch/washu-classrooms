@@ -17,6 +17,7 @@
 - **标签按学院分色：** 每栋楼的标签用所属学院的颜色（文理学院、McKelvey、Olin、Sam Fox、Brown School、法学院、图书馆、校园生活），地图左下角有图例。归属写在 `src/lib/schools.ts` 里。
 - **教室详情：** 容量、座位形式、黑板、投影幕、麦克风、遮光效果、无障碍、设备清单、照片、座位图；CTL 提供 360° 全景的教室会有入口。
 - **座位视角：** 在教室示意图里点任意座位，从那个位置看黑板，同时显示距离、偏离正中的角度，以及一张不同字号的幻灯片。示意图根据座位数和座位形式生成，不是真实教室；真实环境请看照片和 360° 全景。
+- **哪间教室现在没课：** 网站知道 283 间教室本学期每周的上课时间。教室页面用条形图显示一周的课，并写明现在有没有课、到几点；教室列表里有同样的标记，「找教室」里可以只看“现在没课”的。只显示教室什么时候被占用，不显示是哪门课。
 - **找教室：** 按最少座位数、座位形式、无障碍、360° 全景和设备筛选。地图会把没有匹配教室的楼变淡，其余的楼显示匹配数量。
 - **搜索：** 教学楼、教室（`seigle 301`、`eads204`），以及 Fall 2026 和 Spring 2027 的课程与老师。
 - **收藏、分享链接、步行导航：** 收藏只保存在你的浏览器里。每栋楼、每间教室都有独立链接。
@@ -24,14 +25,14 @@
 
 ## 目前做不到的
 
-这个项目参考的 UCSD 版本可以显示「现在哪间教室空着」。WashU 版本目前只对图书馆自习室做得到，因为 WashU 已不再公开每节课的上课教室：
+WashU 不公开每节课的上课教室：
 
 - 教务处公开的 [Class Schedule Search](https://registrar.washu.edu/classes-registration/class-schedule-search/) 只有星期、时间、老师和选课人数，没有地点。
 - 上课教室在 Workday 和 reserve.wustl.edu 里，两者都需要 WashU Key 登录。
 
 - 旧版公开课表有上课教室，这里补充的教室就来自它；但它在 2025 年停用，存档也只覆盖每学期的一部分课程。这足以确认某间教室存在，不足以判断它现在空不空。
 
-所以这里的课程搜索只显示时间和老师。如果 WashU 以后公开地点，或者有同学导出自己的 Workday 数据并愿意分享，就可以在现有数据上加教室课表和「现在空闲」。
+所以这里的教室课表来自登录的学生在 Workday 的 Find Course Sections 报表里读到的内容（见[数据与准确性](#数据与准确性)），并且只公开教室被占用的时间。课程搜索仍然只有时间和老师，没有教室。课表只包含课程：考试、答疑、活动和临时借用都不在里面，没课的教室也可能锁着。另有大约 20 间本学期只上少量课的教室还没有收进网站。
 
 Olin 商学院的小组自习室在 reserve.wustl.edu 预约，需要 WashU Key 登录，所以本站只给出入口，不显示预约情况。
 
@@ -63,6 +64,7 @@ npm run data:osm                 # OpenStreetMap 建筑、道路、树木、绿�
 npm run data:archive             # Internet Archive 上的旧版课表存档（一小时以上），并生成 data/listing-rooms.json
 npm run data:study               # 图书馆自习室及其 LibCal 预约页
 npm run data:build               # 生成 classrooms.json 和 campus.json
+npm run data:schedule            # 由 data/raw/workday/sections.json 生成 schedule.json（见下）
 
 npm run data:courses -- "2026 Fall"     # 生成 courses-2026F.json
 npm run data:courses -- "2027 Spring"   # 生成 courses-2027S.json
@@ -105,6 +107,7 @@ node scripts/sync-shared.mjs ../ucd-classrooms --check   # 只列出差异
 - **教室：** [CTL Classroom Directory](https://ctl.wustl.edu/classrooms/)，31 栋楼共 129 间教室，是教务处统一排课的公共教室。照片、座位图、360° 全景都链接自 ctl.wustl.edu，版权归 WashU。
 - **其他教室：** WashU 旧版公开课表（courses.wustl.edu 与 acadinfo.wustl.edu/CourseListings，2025 年停用），取自 [Internet Archive](https://web.archive.org/) 的存档。存档里至少有两个班次在某房间上课，才会收录这间房。这些房间显示的座位数是在那里排过的最大班级名额，是下限而不是实际容量。`data/listing-rooms.json` 是汇总后的清单；`data/extra-rooms.json` 是少量手工补充的房间。
 - **自习室：** [WashU 图书馆自习室目录](https://library.washu.edu/study-rooms/) 和图书馆公开的 [LibCal](https://wustl.libcal.com/allspaces) 预约页。预约情况是最多滞后 20 分钟的副本，以 LibCal 为准，预约也在 LibCal 完成。Olin Library 的平面图是图书馆自己的图片，从 library.washu.edu 加载（太慢时改用 Internet Archive 的副本）；`data/study-room-spots.json` 记录每间房的标签在图上的位置，是人工对照图读出来的。
+- **教室课表：** Workday 的 Find Course Sections 报表，Fall 2026、Danforth 校区，由登录的学生于 2026-11-15 读取。WashU 只向登录的校内成员显示上课教室，所以 `schedule.json` 只保留教室、星期和时间，不含课程和老师。它是一份快照：之后的教室调整不会反映出来，停课日按教务处校历。生成方法见 [`scripts/build-schedule.mjs`](scripts/build-schedule.mjs) 开头的说明，原始文件不进仓库。
 - **课程：** 教务处公开的 Class Schedule Search。官方说明每 48 小时刷新一次，不保证实时准确；这里是各文件所标日期的快照。
 - **建筑照片：** 15 栋楼的外观照片来自 [Wikimedia Commons](https://commons.wikimedia.org/)，按各自标注的许可使用，从 Commons 直接加载、不做拷贝。清单在 `data/building-photos.json`，每张都人工核对过。每栋楼另有 Google 街景链接。
 - **地图：** © [OpenStreetMap](https://www.openstreetmap.org/copyright) 贡献者，ODbL。校内的树是 OpenStreetMap 上已测绘的；周边街区的树、屋顶形状和窗户是为了好看而生成的。

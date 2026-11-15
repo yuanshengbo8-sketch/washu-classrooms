@@ -11,6 +11,7 @@ export const CAMPUS: CampusConfig = {
   timeZone: 'America/Chicago',
   repoUrl: 'https://github.com/yuanshengbo8-sketch/washu-classrooms',
   liveAvailabilityUrl: 'https://raw.githubusercontent.com/yuanshengbo8-sketch/washu-classrooms/live-data/study-availability.json',
+  classSchedule: true,
   labelNames: {
     'Lucy and Stanley Lopata House': 'Lopata House',
     'Scott Rudolph Hall': 'Rudolph'
@@ -81,6 +82,7 @@ export const CAMPUS: CampusConfig = {
     aboutCourses: { en: 'Courses: the Registrar’s public Class Schedule Search, which lists times and instructors but not rooms. Rooms outside the CTL directory come from WashU’s old public Course Listings (retired in 2025), as archived by the Internet Archive.', zh: '课程：教务处公开的 Class Schedule Search，只有时间和老师，没有上课教室。CTL 目录之外的教室来自 WashU 旧版公开课表（2025 年停用）在 Internet Archive 的存档。' },
     aboutStudy: { en: 'Study rooms: WashU Libraries’ study room directory. Bookings are read from the Libraries’ public LibCal pages about every 20 minutes; LibCal is the authority.', zh: '自习室：WashU 图书馆的自习室目录。预约情况约每 20 分钟从图书馆公开的 LibCal 页面读取一次，以 LibCal 为准。' },
     aboutFloors: { en: 'Floors are inferred from room numbers. Building heights and the floor stack are for display, not survey data.', zh: '楼层由房间号推断；建筑高度和楼层分解仅用于展示，并非实测。' },
+    aboutSchedule: { en: 'Class meetings by room: read from Workday’s Find Course Sections by a signed-in student. Classes only — no exams, events or one-off bookings.', zh: '各教室的上课时间：由登录的学生从 Workday 的 Find Course Sections 读取。只有课程，不含考试、活动和临时借用。' },
     aboutCredit: { en: 'Inspired by the UCSD Classroom Explorer by zhenzhenfufu, wenhaoquestion and SheepTester.', zh: '灵感来自 zhenzhenfufu、wenhaoquestion 与 SheepTester 的 UCSD Classroom Explorer。' },
     studySource: { en: 'Study room details:', zh: '自习室信息来自：' }
   }

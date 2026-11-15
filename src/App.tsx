@@ -6,6 +6,8 @@ import { initialLang, safeSet, translate } from './lib/i18n'
 import { loadFavorites, readUrl, saveFavorites, writeUrl } from './lib/store'
 import type { Availability, StudyData } from './lib/study'
 import { isFresh, loadAvailability, statusOf } from './lib/study'
+import type { ClassSchedule } from './lib/schedule'
+import { HAS_SCHEDULE, freeRooms } from './lib/schedule'
 import { TopBar } from './components/TopBar'
 import { BuildingPanel, FinderPanel, RoomDetail } from './components/Panels'
 import { AboutModal, CourseModal } from './components/Modals'
@@ -49,7 +51,8 @@ export function App () {
   const [studyOpen, setStudyOpen] = useState(false)
   const [study, setStudy] = useState<StudyData | null>(null)
   const [availability, setAvailability] = useState<Availability | null>(null)
-  const [, setTick] = useState(0)
+  const [tick, setTick] = useState(0)
+  const [schedule, setSchedule] = useState<ClassSchedule | null>(null)
 
   // The colour key starts open where there is room for it.
   const [legendOpen, setLegendOpen] = useState(() => window.innerWidth > 780)
@@ -84,10 +87,11 @@ export function App () {
   useEffect(() => {
     let cancelled = false
     loadJson<StudyData>('study-rooms.json').then(loaded => { if (!cancelled) setStudy(loaded) }).catch(() => {})
+    if (HAS_SCHEDULE) loadJson<ClassSchedule>('schedule.json').then(loaded => { if (!cancelled) setSchedule(loaded) }).catch(() => {})
     const refresh = () => loadAvailability(dataUrl('study-availability.json')).then(loaded => { if (!cancelled && loaded) setAvailability(loaded) })
     refresh()
     const reload = window.setInterval(refresh, 5 * 60 * 1000)
-    // Re-evaluate "free until" as the clock moves.
+    // Re-evaluate "free until" and "no class now" as the clock moves.
     const tick = window.setInterval(() => setTick(value => value + 1), 60 * 1000)
     return () => {
       cancelled = true
@@ -105,6 +109,9 @@ export function App () {
   const buildingStudyRooms = useMemo(() => studyRooms.filter(item => item.building === buildingId), [studyRooms, buildingId])
   const studyFree = isFresh(availability) ? studyRooms.filter(item => statusOf(item, availability).kind === 'free').length : 0
 
+  // Rooms with no class this minute.
+  const free = useMemo(() => freeRooms(schedule), [schedule, tick])
+
   const rooms = useMemo(() => data?.rooms ?? [], [data])
   const buildings = useMemo(() => campus?.buildings ?? [], [campus])
   const building = buildings.find(item => item.id === buildingId)
@@ -121,10 +128,10 @@ export function App () {
     if (!filtersActive(filters)) return null
     const counts = new Map<string, number>()
     for (const item of rooms) {
-      if (matchesFilters(item, filters)) counts.set(item.building, (counts.get(item.building) ?? 0) + 1)
+      if (matchesFilters(item, filters, free)) counts.set(item.building, (counts.get(item.building) ?? 0) + 1)
     }
     return counts
-  }, [rooms, filters])
+  }, [rooms, filters, free])
 
   useEffect(() => {
     if (data) writeUrl({ building: buildingId, room: roomId })
@@ -199,7 +206,7 @@ export function App () {
   }
 
   const filterCount =
-    (filters.minCapacity > 0 ? 1 : 0) + (filters.style ? 1 : 0) + (filters.accessible ? 1 : 0) + (filters.tour ? 1 : 0) + filters.equipment.length
+    (filters.minCapacity > 0 ? 1 : 0) + (filters.style ? 1 : 0) + (filters.accessible ? 1 : 0) + (filters.tour ? 1 : 0) + (filters.freeNow && free ? 1 : 0) + filters.equipment.length
   const courses = courseData[termId] ?? null
   const course = courseCode ? courses?.find(item => item.code === courseCode) ?? null : null
 
@@ -209,6 +216,7 @@ export function App () {
       <RoomDetail
         room={room}
         building={building}
+        schedule={schedule}
         lang={lang}
         t={t}
         favorite={favorites.has(room.id)}
@@ -232,6 +240,8 @@ export function App () {
         studyRooms={buildingStudyRooms}
         availability={availability}
         plans={study?.plans ?? {}}
+        schedule={schedule}
+        free={free}
         lang={lang}
         t={t}
         filters={filters}
@@ -265,6 +275,8 @@ export function App () {
         filters={filters}
         favorites={favorites}
         favoritesOnly={favoritesOnly}
+        schedule={schedule}
+        free={free}
         onFilters={setFilters}
         onFavoritesOnly={setFavoritesOnly}
         onOpen={target => openRoom(target, 'finder')}

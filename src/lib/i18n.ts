@@ -133,6 +133,17 @@ const GENERIC = {
   dataAsOf: { en: 'Classroom data fetched {d}', zh: '教室数据抓取于 {d}' },
   photoOf: { en: 'Photo {a} of {b}', zh: '照片 {a} / {b}' },
   photoCount: { en: '{n} photos', zh: '{n} 张照片' },
+  classSchedule: { en: 'Class schedule', zh: '课表' },
+  classFreeNow: { en: 'No class now', zh: '现在没课' },
+  classFreeUntil: { en: 'Free until {time}', zh: '{time} 前没课' },
+  classFreeRest: { en: 'No more classes today', zh: '今天之后没课' },
+  classBusyUntil: { en: 'In class until {time}', zh: '上课中，到 {time}' },
+  classOff: { en: 'No classes meet today.', zh: '今天不上课。' },
+  classNone: { en: 'No classes', zh: '没有课' },
+  classNote: {
+    en: '{term} classes only, read on {date}. Exams, events and one-off bookings are not included, and a room with no class may be locked.',
+    zh: '只包含 {term} 的课程，读取于 {date}。不含考试、活动和临时借用；没课的教室也可能锁着。'
+  },
   days: { en: 'Mon,Tue,Wed,Thu,Fri,Sat,Sun', zh: '周一,周二,周三,周四,周五,周六,周日' }
 } as const
 
